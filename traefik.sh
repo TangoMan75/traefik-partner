@@ -81,25 +81,10 @@ domain=''
 
 ## Build and start traefik
 ##
-## {
-##   "namespace": "install",
-##   "requires": [
-##     "yq"
-##   ],
-##   "depends": [
-##     "_alert_secondary",
-##     "build",
-##     "certs",
-##     "letsencrypt",
-##     "network",
-##     "password",
-##     "set_env",
-##     "start"
-##   ],
-##   "assumes": [
-##     "env"
-##   ]
-## }
+## @namespace recipes/traefik/install
+## @requires yq
+## @depends recipes/traefik/app/password recipes/traefik/certificates/certs recipes/traefik/docker/build recipes/traefik/docker/network recipes/traefik/docker/start recipes/traefik/install/set_env recipes/traefik/letsencrypt/letsencrypt src/shell/colors/_alert_secondary src/shell/system/_check_installed
+## @assumes env
 up() {
     _alert_secondary "Starting Traefik container with \"${env}\" environment"
     _check_installed yq
@@ -125,18 +110,10 @@ up() {
 
 ## Set dev or prod configuration
 ##
-## {
-##   "namespace": "install",
-##   "requires": [
-##     "cp"
-##   ],
-##   "depends": [
-##     "_echo_info"
-##   ],
-##   "assumes": [
-##     "env"
-##   ]
-## }
+## @namespace recipes/traefik/install
+## @requires cp false true
+## @depends src/shell/colors/_echo_info src/shell/colors/_echo_warning src/shell/prompts/_yes_no
+## @assumes env
 set_env() {
     _overwrite=false
     if [ -f "./.env" ] || [ -f "./compose.yaml" ] || [ -f "./config/traefik.yaml" ] || [ -f "./config/dynamic/dynamic.yaml" ]; then
@@ -176,16 +153,10 @@ set_env() {
 
 ## Check requirements
 ##
-## {
-##   "namespace": "install",
-##   "requires": [
-##     "basename",
-##     "command"
-##   ],
-##   "depends": [
-##     "_echo_error"
-##   ]
-## }
+## @namespace recipes/traefik/install
+## @requires basename command docker docker-compose mkcert shellcheck yq
+## @depends src/shell/colors/_echo_error
+## @assumes env
 requirements() {
     if [ ! -x "$(command -v docker)" ]; then
         _echo_error "\"$(basename "${0}")\" requires docker, try: 'sudo apt-get install -y docker.io'\n"
@@ -235,21 +206,10 @@ requirements() {
 
 ## Uninstall Traefik
 ##
-## {
-##   "namespace": "install",
-##   "requires": [
-##     "docker",
-##     "rm"
-##   ],
-##   "depends": [
-##     "_echo_info",
-##     "_echo_warning",
-##     "_yes_no",
-##     "clear",
-##     "remove_certs",
-##     "remove_network"
-##   ]
-## }
+## @namespace recipes/traefik/install
+## @requires clear docker rm true whoami
+## @depends recipes/traefik/app/clear recipes/traefik/certificates/remove_certs recipes/traefik/docker/remove_network recipes/traefik/docker/stop src/shell/colors/_echo_info src/shell/install/_uninstall src/shell/prompts/_yes_no src/shell/reflexion/_get_parameter src/shell/system/_check_installed
+## @assumes network
 uninstall() {
     _check_installed docker
 
@@ -299,15 +259,9 @@ uninstall() {
 
 ## Show traefik error log
 ##
-## {
-##   "namespace": "app",
-##   "requires": [
-##     "tail"
-##   ],
-##   "depends": [
-##     "_echo_info"
-##   ]
-## }
+## @namespace recipes/traefik/app
+## @requires tail
+## @depends src/shell/colors/_echo_info
 logs() {
     _echo_info 'tail -n 50 -f ./logs/error.log\n'
     tail -n 50 -f ./logs/error.log
@@ -315,15 +269,9 @@ logs() {
 
 ## Clear logs
 ##
-## {
-##   "namespace": "app",
-##   "requires": [
-##     "rm"
-##   ],
-##   "depends": [
-##     "_echo_info"
-##   ]
-## }
+## @namespace recipes/traefik/app
+## @requires rm true
+## @depends src/shell/colors/_echo_info
 clear() {
     _echo_info 'rm -f ./logs/*.log || true\n'
     rm -f ./logs/*.log || true
@@ -331,19 +279,10 @@ clear() {
 
 ## Backup traefik configuration
 ##
-## {
-##   "namespace": "app",
-##   "requires": [
-##     "cp",
-##     "mkdir"
-##   ],
-##   "depends": [
-##     "_echo_info"
-##   ],
-##   "assumes": [
-##     "HOME"
-##   ]
-## }
+## @namespace recipes/traefik/app
+## @requires cp mkdir true
+## @depends src/shell/colors/_echo_info
+## @assumes HOME
 backup() {
     _backup_dir=${HOME}/.tangoman75/traefik-partner/backup
     _echo_info "mkdir -p \"${_backup_dir}/config\"\n"
@@ -368,18 +307,10 @@ backup() {
 
 ## Restore traefik configuration
 ##
-## {
-##   "namespace": "app",
-##   "requires": [
-##     "cp"
-##   ],
-##   "depends": [
-##     "_echo_info"
-##   ],
-##   "assumes": [
-##     "HOME"
-##   ]
-## }
+## @namespace recipes/traefik/app
+## @requires cp
+## @depends src/shell/colors/_echo_info
+## @assumes HOME
 restore() {
     _backup_dir=${HOME}/.tangoman75/traefik-partner/backup
     _echo_info "cp -rfvT \"${_backup_dir}\" .\n"
@@ -388,16 +319,9 @@ restore() {
 
 ## Open all configured domains in default browser
 ##
-## {
-##   "namespace": "app",
-##   "requires": [
-##     "nohup"
-##   ],
-##   "depends": [
-##     "_echo_info",
-##     "_open"
-##   ]
-## }
+## @namespace recipes/traefik/app
+## @requires nohup
+## @depends src/shell/colors/_echo_info src/shell/compatibility/_open src/shell/reflexion/_get_parameter
 open() {
     DOMAINS="$(_get_parameter .env DOMAINS)"
 
@@ -412,21 +336,10 @@ open() {
 
 ## Set traefik dashboard password
 ##
-## {
-##   "namespace": "app",
-##   "requires": [
-##     "htpasswd",
-##     "read",
-##     "yq"
-##   ],
-##   "depends": [
-##     "_check_installed",
-##     "_echo_info",
-##     "_echo_success",
-##     "_get_parameter",
-##     "_set_parameter"
-##   ]
-## }
+## @namespace recipes/traefik/app
+## @requires htpasswd read yq
+## @depends src/shell/colors/_echo_info src/shell/colors/_echo_success src/shell/reflexion/_get_parameter src/shell/reflexion/_set_parameter src/shell/system/_check_installed
+## @assumes password user
 password() {
     _check_installed htpasswd
     _check_installed yq
@@ -481,13 +394,8 @@ password() {
 
 ## Config Let's Encrypt
 ##
-## {
-##   "namespace": "letsencrypt",
-##   "depends": [
-##     "acme",
-##     "email"
-##   ]
-## }
+## @namespace recipes/traefik/letsencrypt
+## @depends recipes/traefik/letsencrypt/acme recipes/traefik/letsencrypt/email
 letsencrypt() {
     acme
     email
@@ -495,16 +403,9 @@ letsencrypt() {
 
 ## Create empty Let's Encrypt acme.json file
 ##
-## {
-##   "namespace": "letsencrypt",
-##   "requires": [
-##     "chmod",
-##     "touch"
-##   ],
-##   "depends": [
-##     "_echo_info"
-##   ]
-## }
+## @namespace recipes/traefik/letsencrypt
+## @requires chmod touch
+## @depends src/shell/colors/_echo_info
 acme() {
     _echo_info 'touch ./config/acme.json\n'
     touch ./config/acme.json
@@ -515,19 +416,10 @@ acme() {
 
 ## Set Let's Encrypt email
 ##
-## {
-##   "namespace": "letsencrypt",
-##   "requires": [
-##     "read",
-##     "yq"
-##   ],
-##   "depends": [
-##     "_echo_info",
-##     "_echo_success",
-##     "_get_parameter",
-##     "requirements"
-##   ]
-## }
+## @namespace recipes/traefik/letsencrypt
+## @requires read yq
+## @depends src/shell/colors/_echo_info src/shell/colors/_echo_success src/shell/reflexion/_get_parameter src/shell/reflexion/_set_parameter src/shell/system/_check_installed
+## @assumes email
 email() {
     _check_installed yq
 
@@ -559,20 +451,10 @@ email() {
 
 ## Install local SSL certificates
 ##
-## {
-##   "namespace": "certificates",
-##   "requires": [
-##     "mkcert",
-##     "yq"
-##   ],
-##   "depends": [
-##     "_check_installed",
-##     "_echo_error",
-##     "_echo_info",
-##     "_get_parameter",
-##     "print_domains"
-##   ]
-## }
+## @namespace recipes/traefik/certificates
+## @requires mkcert yq
+## @depends recipes/traefik/certificates/print_domains src/shell/colors/_echo_danger src/shell/colors/_echo_error src/shell/colors/_echo_info src/shell/reflexion/_get_parameter src/shell/system/_check_installed
+## @assumes env
 certs() {
     _check_installed mkcert
     _check_installed yq
@@ -612,22 +494,10 @@ certs() {
 
 ## Add a new domain to current local certificates
 ##
-## {
-##   "namespace": "certificates",
-##   "requires": [
-##     "read"
-##   ],
-##   "depends": [
-##     "_echo_error",
-##     "_get_parameter",
-##     "_set_parameter",
-##     "certs",
-##     "print_domains"
-##   ],
-##   "assumes": [
-##     "domain"
-##   ]
-## }
+## @namespace recipes/traefik/certificates
+## @requires read
+## @depends recipes/traefik/certificates/certs recipes/traefik/certificates/print_domains src/shell/colors/_echo_error src/shell/colors/_echo_success src/shell/reflexion/_get_parameter src/shell/reflexion/_set_parameter
+## @assumes domain env
 add_domain() {
     if [ "${env}" = prod ]; then
         _echo_error 'This command should not be executed in production environement!\n'
@@ -650,14 +520,8 @@ add_domain() {
 
 ## Print configured domains
 ##
-## {
-##   "namespace": "certificates",
-##   "depends": [
-##     "_echo_info",
-##     "_echo_success",
-##     "_get_parameter"
-##   ]
-## }
+## @namespace recipes/traefik/certificates
+## @depends src/shell/colors/_echo_success src/shell/colors/_echo_warning src/shell/reflexion/_get_parameter
 print_domains() {
     DOMAINS="$(_get_parameter .env DOMAINS)"
     _echo_warning 'Currently configured domains: ';
@@ -666,16 +530,9 @@ print_domains() {
 
 ## Remove local SSL certificates
 ##
-## {
-##   "namespace": "certificates",
-##   "requires": [
-##     "mkcert",
-##     "rm"
-##   ],
-##   "depends": [
-##     "_echo_info"
-##   ]
-## }
+## @namespace recipes/traefik/certificates
+## @requires mkcert rm
+## @depends src/shell/colors/_echo_info src/shell/system/_check_installed
 remove_certs() {
     _check_installed mkcert
 
@@ -695,56 +552,36 @@ remove_certs() {
 
 ## Build docker stack
 ##
-## {
-##   "namespace": "docker",
-##   "depends": [
-##     "_docker_compose_build"
-##   ]
-## }
+## @namespace recipes/traefik/docker
+## @depends src/shell/docker/_docker_compose_build
 build() {
     _docker_compose_build ./compose.yaml
 }
 
 ## Start docker stack
 ##
-## {
-##   "namespace": "docker",
-##   "depends": [
-##     "_docker_compose_start"
-##   ]
-## }
+## @namespace recipes/traefik/docker
+## @requires true
+## @depends src/shell/docker/_docker_compose_start
 start() {
     _docker_compose_start ./compose.yaml || true
 }
 
 ## Stop docker stack
 ##
-## {
-##   "namespace": "docker",
-##   "depends": [
-##     "_docker_compose_stop"
-##   ]
-## }
+## @namespace recipes/traefik/docker
+## @requires true
+## @depends src/shell/docker/_docker_compose_stop
 stop() {
     _docker_compose_stop ./compose.yaml || true
 }
 
 ## Create network
 ##
-## {
-##   "namespace": "docker",
-##   "requires": [
-##     "docker",
-##     "read",
-##     "yq"
-##   ],
-##   "depends": [
-##     "_echo_info",
-##     "_echo_success",
-##     "_get_parameter",
-##     "_set_parameter"
-##   ]
-## }
+## @namespace recipes/traefik/docker
+## @requires docker read true yq
+## @depends src/shell/colors/_echo_info src/shell/colors/_echo_success src/shell/reflexion/_get_parameter src/shell/reflexion/_set_parameter src/shell/system/_check_installed
+## @assumes network
 network() {
     _check_installed docker
     _check_installed yq
@@ -788,16 +625,10 @@ network() {
 
 ## Remove network
 ##
-## {
-##   "namespace": "docker",
-##   "requires": [
-##     "docker"
-##   ],
-##   "depends": [
-##     "_echo_info",
-##     "_get_parameter"
-##   ]
-## }
+## @namespace recipes/traefik/docker
+## @requires docker rm true
+## @depends src/shell/colors/_echo_info src/shell/reflexion/_get_parameter src/shell/system/_check_installed
+## @assumes network
 remove_network() {
     _check_installed docker
 
@@ -821,13 +652,8 @@ remove_network() {
 
 ## Sniff errors with linters
 ##
-## {
-##   "namespace": "ci_cd",
-##   "depends": [
-##     "lint_shell",
-##     "lint_yaml"
-##   ]
-## }
+## @namespace recipes/traefik/ci_cd
+## @depends recipes/traefik/ci_cd/lint_shell recipes/traefik/ci_cd/lint_yaml
 lint() {
     lint_shell
     lint_yaml
@@ -835,19 +661,9 @@ lint() {
 
 ## Sniff errors with yamllint
 ##
-## {
-##   "namespace": "ci_cd",
-##   "requires": [
-##     "find",
-##     "read",
-##     "sort",
-##     "yamllint"
-##   ],
-##   "depends": [
-##     "_check_installed",
-##     "_echo_info"
-##   ]
-## }
+## @namespace recipes/traefik/ci_cd
+## @requires find read sort yamllint
+## @depends src/shell/colors/_echo_info src/shell/system/_check_installed
 lint_yaml() {
     _check_installed yamllint
 
@@ -860,16 +676,9 @@ lint_yaml() {
 
 ## Sniff errors with shellcheck
 ##
-## {
-##   "namespace": "ci_cd",
-##   "requires": [
-##     "find",
-##     "shellcheck"
-##   ],
-##   "depends": [
-##     "_echo_info"
-##   ]
-## }
+## @namespace recipes/traefik/ci_cd
+## @requires find shellcheck sort
+## @depends src/shell/colors/_echo_info src/shell/system/_check_installed
 lint_shell() {
     _check_installed shellcheck
 
@@ -886,75 +695,27 @@ lint_shell() {
 
 ## Install traefik companion and enable autocompletion
 ##
-## {
-##   "namespace": "install",
-##   "depends": [
-##     "_install"
-##   ]
-## }
+## @namespace recipes/traefik/install
+## @depends src/shell/install/_install
 self_install() {
     _install "$0"
 }
 
 ## Uninstall traefik companion from system
 ##
-## {
-##   "namespace": "install",
-##   "depends": [
-##     "_uninstall"
-##   ]
-## }
+## @namespace recipes/traefik/install
+## @depends src/shell/install/_uninstall
 self_uninstall() {
     _uninstall "$0"
 }
 
-##################################################
-### Help
-##################################################
-
-## Print this help
-##
-## {
-##   "namespace": "help",
-##   "depends": [
-##     "_help"
-##   ]
-## }
-help() {
-    _help "$0"
-}
-
-#--------------------------------------------------
-#_ Hooks
-#--------------------------------------------------
-
-## Place here commands you need executed by default (optional)
-##
-## {
-##   "namespace": "hooks"
-## }
-_default() {
-    help
-}
-
 ## Run following code before each execution
 ##
-## {
-##   "depends": [
-##     "_pwd"
-##   ]
-## }
+## @namespace recipes/traefik
+## @depends src/shell/system/_pwd
+## @overrides src/shell/hooks/_before
 _before() {
     cd "$(_pwd)" || return 1
-}
-
-## Place here commands you need executed last every time (optional)
-##
-## {
-##   "namespace": "hooks"
-## }
-_after() {
-    return 0
 }
 
 ###################################################
@@ -969,31 +730,25 @@ _after() {
 #_ Colors
 #--------------------------------------------------
 
-## shellcheck disable=SC2034
+## Print primary alert
+##
+## @namespace src/shell/colors
+## @requires printf
+## @assumes _ALERT_PRIMARY _EOL
+## @param {str} <STRING> (required) Text to display.
+_alert_primary()   {
+    printf "${_EOL}%b%64s${_EOL}%b %-63s${_EOL}%b%64s${_EOL}\n" "${_ALERT_PRIMARY}" '' "${_ALERT_PRIMARY}" "$1" "${_ALERT_PRIMARY}" ''
+}
 
-## bright white text
-_PRIMARY='\033[97m'
-
-## bright blue text
-_SECONDARY='\033[94m'
-
-## bright green text
-_SUCCESS='\033[32m'
-
-## red text
-_DANGER='\033[31m'
-
-## orange text
-_WARNING='\033[33m'
-
-## bright purple text
-_INFO='\033[95m'
-
-## reset formatting
-_DEFAULT='\033[0m'
-
-## reset formatting and carriage return
-_EOL='\033[0m\n'
+## Print secondary alert
+##
+## @namespace src/shell/colors
+## @requires printf
+## @assumes _ALERT_SECONDARY _EOL
+## @param {str} <STRING> (required) Text to display.
+_alert_secondary() {
+    printf "${_EOL}%b%64s${_EOL}%b %-63s${_EOL}%b%64s${_EOL}\n" "${_ALERT_SECONDARY}" '' "${_ALERT_SECONDARY}" "$1" "${_ALERT_SECONDARY}" ''
+}
 
 ## shellcheck disable=SC2034
 
@@ -1015,513 +770,228 @@ _ALERT_WARNING='\033[1;43;97m'
 ## bold white text over blue background
 _ALERT_INFO='\033[1;44;97m'
 
+## bold dark gray text over light gray background
+_ALERT_LIGHT='\033[1;47;90m'
+
+## bold white text over black background
+_ALERT_DARK='\033[1;40;37m'
+
+## shellcheck disable=SC2034
+
+## bright white text
+_PRIMARY='\033[97m'
+
+## bright blue text
+_SECONDARY='\033[94m'
+
+## bright green text
+_SUCCESS='\033[32m'
+
+## red text
+_DANGER='\033[31m'
+
+## orange text
+_WARNING='\033[33m'
+
+## bright purple text
+_INFO='\033[95m'
+
+## light gray background with dark gray text
+_LIGHT='\033[47;90m'
+
+## black background with light gray text
+_DARK='\033[40;37m'
+
+## reset formatting
+_DEFAULT='\033[0m'
+
+## reset formatting and carriage return
+_EOL='\033[0m\n'
+
+## Print danger text with optional indentation and padding
+##
+## @namespace src/shell/colors
+## @requires printf
+## @assumes _DANGER _DEFAULT
+## @param {str} <STRING> (required) Text to display.
+## @param {int} <INDENTATION> (default:0) Indentation level.
+## @param {int} <PADDING> (default:0) Padding length.
+_echo_danger() {
+    set -- "$1" "${2:-0}" "$((${3:-0}-${#1}))"
+    if [ "$3" -lt 0 ]; then set -- "$1" "$2" 0; fi
+    printf "%*s${_DANGER}%b${_DEFAULT}%*s" "$2" '' "$1" "$3" ''
+}
+
+## Print error message to STDERR, prefixed with "error: "
+##
+## @namespace src/shell/colors
+## @requires printf
+## @assumes _DANGER _DEFAULT
+## @param {str} <MESSAGE> (required) Error message to display.
+_echo_error() {
+    printf "${_DANGER}error: %b${_DEFAULT}" "$1" >&2
+}
+
+## Print info text with optional indentation and padding
+##
+## @namespace src/shell/colors
+## @requires printf
+## @assumes _DEFAULT _INFO
+## @param {str} <STRING> (required) Text to display.
+## @param {int} <INDENTATION> (default:0) Indentation level.
+## @param {int} <PADDING> (default:0) Padding length.
+_echo_info() {
+    set -- "$1" "${2:-0}" "$((${3:-0}-${#1}))"
+    if [ "$3" -lt 0 ]; then set -- "$1" "$2" 0; fi
+    printf "%*s${_INFO}%b${_DEFAULT}%*s" "$2" '' "$1" "$3" ''
+}
+
 ## Print primary text with optional indentation and padding
 ##
-## {
-##   "namespace": "colors",
-##   "assumes": [
-##     "_DEFAULT",
-##     "_PRIMARY"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "STRING",
-##       "type": "str",
-##       "description": "Text to display.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "INDENTATION",
-##       "type": "int",
-##       "description": "Indentation level.",
-##       "default": 0
-##     },
-##     {
-##       "position": 3,
-##       "name": "PADDING",
-##       "type": "int",
-##       "description": "Padding length.",
-##       "default": 0
-##     }
-##   ]
-## }
+## @namespace src/shell/colors
+## @requires printf
+## @assumes _DEFAULT _PRIMARY
+## @param {str} <STRING> (required) Text to display.
+## @param {int} <INDENTATION> (default:0) Indentation level.
+## @param {int} <PADDING> (default:0) Padding length.
 _echo_primary() {
-    # Synopsis: _echo_primary <STRING> [INDENTATION] [PADDING]
-    #  STRING:      Text to display.
-    #  INDENTATION: Indentation level (default: 0).
-    #  PADDING:     Padding length (default: 0).
-    #  note:        Older versions of printf supports a more limited set of format specifiers (eg: "%-*b"),
-    #               this is why we're calculating the PADDING length on each execution.
+    # Older versions of printf supports a more limited set of format specifiers (eg: "%-*b"),
+    # this is why we're calculating the PADDING length on each execution.
 
     set -- "$1" "${2:-0}" "$((${3:-0}-${#1}))"
     if [ "$3" -lt 0 ]; then set -- "$1" "$2" 0; fi
     printf "%*s${_PRIMARY}%b${_DEFAULT}%*s" "$2" '' "$1" "$3" ''
 }
 
-## Print secondary text with optional indentation and padding
-##
-## {
-##   "namespace": "colors",
-##   "assumes": [
-##     "_DEFAULT",
-##     "_SECONDARY"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "STRING",
-##       "type": "str",
-##       "description": "Text to display.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "INDENTATION",
-##       "type": "int",
-##       "description": "Indentation level.",
-##       "default": 0
-##     },
-##     {
-##       "position": 3,
-##       "name": "PADDING",
-##       "type": "int",
-##       "description": "Padding length.",
-##       "default": 0
-##     }
-##   ]
-## }
-_echo_secondary() {
-    # Synopsis: _echo_secondary <STRING> [INDENTATION] [PADDING]
-    #  STRING:       Text to display.
-    #  INDENTATION:  Indentation level (default: 0).
-    #  PADDING:      Padding length (default: 0).
-
-    set -- "$1" "${2:-0}" "$((${3:-0}-${#1}))"
-    if [ "$3" -lt 0 ]; then set -- "$1" "$2" 0; fi
-    printf "%*s${_SECONDARY}%b${_DEFAULT}%*s" "$2" '' "$1" "$3" ''
-}
-
 ## Print success text with optional indentation and padding
 ##
-## {
-##   "namespace": "colors",
-##   "assumes": [
-##     "_DEFAULT",
-##     "_SUCCESS"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "STRING",
-##       "type": "str",
-##       "description": "Text to display.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "INDENTATION",
-##       "type": "int",
-##       "description": "Indentation level.",
-##       "default": 0
-##     },
-##     {
-##       "position": 3,
-##       "name": "PADDING",
-##       "type": "int",
-##       "description": "Padding length.",
-##       "default": 0
-##     }
-##   ]
-## }
+## @namespace src/shell/colors
+## @requires printf
+## @assumes _DEFAULT _SUCCESS
+## @param {str} <STRING> (required) Text to display.
+## @param {int} <INDENTATION> (default:0) Indentation level.
+## @param {int} <PADDING> (default:0) Padding length.
 _echo_success() {
-    # Synopsis: _echo_success <STRING> [INDENTATION] [PADDING]
-    #  STRING:       Text to display.
-    #  INDENTATION:  Indentation level (default: 0).
-    #  PADDING:      Padding length (default: 0).
-
     set -- "$1" "${2:-0}" "$((${3:-0}-${#1}))"
     if [ "$3" -lt 0 ]; then set -- "$1" "$2" 0; fi
     printf "%*s${_SUCCESS}%b${_DEFAULT}%*s" "$2" '' "$1" "$3" ''
 }
 
-## Print danger text with optional indentation and padding
-##
-## {
-##   "namespace": "colors",
-##   "assumes": [
-##     "_DANGER",
-##     "_DEFAULT"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "STRING",
-##       "type": "str",
-##       "description": "Text to display.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "INDENTATION",
-##       "type": "int",
-##       "description": "Indentation level.",
-##       "default": 0
-##     },
-##     {
-##       "position": 3,
-##       "name": "PADDING",
-##       "type": "int",
-##       "description": "Padding length.",
-##       "default": 0
-##     }
-##   ]
-## }
-_echo_danger() {
-    # Synopsis: _echo_danger <STRING> [INDENTATION] [PADDING]
-    #  STRING:       Text to display.
-    #  INDENTATION:  Indentation level (default: 0).
-    #  PADDING:      Padding length (default: 0).
-
-    set -- "$1" "${2:-0}" "$((${3:-0}-${#1}))"
-    if [ "$3" -lt 0 ]; then set -- "$1" "$2" 0; fi
-    printf "%*s${_DANGER}%b${_DEFAULT}%*s" "$2" '' "$1" "$3" ''
-}
-
 ## Print warning text with optional indentation and padding
 ##
-## {
-##   "namespace": "colors",
-##   "assumes": [
-##     "_DEFAULT",
-##     "_WARNING"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "STRING",
-##       "type": "str",
-##       "description": "Text to display.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "INDENTATION",
-##       "type": "int",
-##       "description": "Indentation level.",
-##       "default": 0
-##     },
-##     {
-##       "position": 3,
-##       "name": "PADDING",
-##       "type": "int",
-##       "description": "Padding length.",
-##       "default": 0
-##     }
-##   ]
-## }
+## @namespace src/shell/colors
+## @requires printf
+## @assumes _DEFAULT _WARNING
+## @param {str} <STRING> (required) Text to display.
+## @param {int} <INDENTATION> (default:0) Indentation level.
+## @param {int} <PADDING> (default:0) Padding length.
 _echo_warning() {
-    # Synopsis: _echo_warning <STRING> [INDENTATION] [PADDING]
-    #  STRING:       Text to display.
-    #  INDENTATION:  Indentation level (default: 0).
-    #  PADDING:      Padding length (default: 0).
-
     set -- "$1" "${2:-0}" "$((${3:-0}-${#1}))"
     if [ "$3" -lt 0 ]; then set -- "$1" "$2" 0; fi
     printf "%*s${_WARNING}%b${_DEFAULT}%*s" "$2" '' "$1" "$3" ''
 }
 
-## Print info text with optional indentation and padding
+## Return the command that opens a file or URL with the default handler
 ##
-## {
-##   "namespace": "colors",
-##   "assumes": [
-##     "_DEFAULT",
-##     "_INFO"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "STRING",
-##       "type": "str",
-##       "description": "Text to display.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "INDENTATION",
-##       "type": "int",
-##       "description": "Indentation level.",
-##       "default": 0
-##     },
-##     {
-##       "position": 3,
-##       "name": "PADDING",
-##       "type": "int",
-##       "description": "Padding length.",
-##       "default": 0
-##     }
-##   ]
-## }
-_echo_info() {
-    # Synopsis: _echo_info <STRING> [INDENTATION] [PADDING]
-    #  STRING:       Text to display.
-    #  INDENTATION:  Indentation level (default: 0).
-    #  PADDING:      Padding length (default: 0).
-
-    set -- "$1" "${2:-0}" "$((${3:-0}-${#1}))"
-    if [ "$3" -lt 0 ]; then set -- "$1" "$2" 0; fi
-    printf "%*s${_INFO}%b${_DEFAULT}%*s" "$2" '' "$1" "$3" ''
-}
-
-## Print error message to STDERR, prefixed with "error: "
+## The operating system type is resolved by _os_type, which prefers
+## the kernel name reported by uname and falls back to OSTYPE. When the
+## type cannot be resolved, _os_type reports the error and _open
+## only propagates the failure.
 ##
-## {
-##   "namespace": "colors",
-##   "assumes": [
-##     "_DANGER",
-##     "_DEFAULT"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "MESSAGE",
-##       "type": "str",
-##       "description": "Error message to display.",
-##       "nullable": false
-##     }
-##   ]
-## }
-_echo_error() {
-    # Synopsis: _echo_error <MESSAGE>
-    #   MESSAGE: Error message to display.
-
-    printf "${_DANGER}error: %b${_DEFAULT}" "$1" >&2
-}
-
-## Print primary alert
-##
-## {
-##   "namespace": "colors",
-##   "assumes": [
-##     "_ALERT_PRIMARY",
-##     "_EOL"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "STRING",
-##       "type": "str",
-##       "description": "Text to display.",
-##       "nullable": false
-##     }
-##   ]
-## }
-_alert_primary()   {
-    # Synopsis: _alert_primary <STRING>
-    #   STRING: Text to display.
-
-    printf "${_EOL}%b%64s${_EOL}%b %-63s${_EOL}%b%64s${_EOL}\n" "${_ALERT_PRIMARY}" '' "${_ALERT_PRIMARY}" "$1" "${_ALERT_PRIMARY}" ''
-}
-
-## Print secondary alert
-##
-## {
-##   "namespace": "colors",
-##   "assumes": [
-##     "_ALERT_SECONDARY",
-##     "_EOL"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "STRING",
-##       "type": "str",
-##       "description": "Text to display.",
-##       "nullable": false
-##     }
-##   ]
-## }
-_alert_secondary() {
-    # Synopsis: _alert_secondary <STRING>
-    #   STRING: Text to display.
-
-    printf "${_EOL}%b%64s${_EOL}%b %-63s${_EOL}%b%64s${_EOL}\n" "${_ALERT_SECONDARY}" '' "${_ALERT_SECONDARY}" "$1" "${_ALERT_SECONDARY}" ''
-}
-
-## Print success alert
-##
-## {
-##   "namespace": "colors",
-##   "assumes": [
-##     "_ALERT_SUCCESS",
-##     "_EOL"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "STRING",
-##       "type": "str",
-##       "description": "Text to display.",
-##       "nullable": false
-##     }
-##   ]
-## }
-_alert_success()   {
-    # Synopsis: _alert_success <STRING>
-    #   STRING: Text to display.
-
-    printf "${_EOL}%b%64s${_EOL}%b %-63s${_EOL}%b%64s${_EOL}\n" "${_ALERT_SUCCESS}" '' "${_ALERT_SUCCESS}" "$1" "${_ALERT_SUCCESS}" ''
-}
-
-## Print danger alert
-##
-## {
-##   "namespace": "colors",
-##   "assumes": [
-##     "_ALERT_DANGER",
-##     "_EOL"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "STRING",
-##       "type": "str",
-##       "description": "Text to display.",
-##       "nullable": false
-##     }
-##   ]
-## }
-_alert_danger()    {
-    # Synopsis: _alert_danger <STRING>
-    #   STRING: Text to display.
-
-    printf "${_EOL}%b%64s${_EOL}%b %-63s${_EOL}%b%64s${_EOL}\n" "${_ALERT_DANGER}" '' "${_ALERT_DANGER}" "$1" "${_ALERT_DANGER}" ''
-}
-
-## Print warning alert
-##
-## {
-##   "namespace": "colors",
-##   "assumes": [
-##     "_ALERT_WARNING",
-##     "_EOL"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "STRING",
-##       "type": "str",
-##       "description": "Text to display.",
-##       "nullable": false
-##     }
-##   ]
-## }
-_alert_warning()   {
-    # Synopsis: _alert_warning <STRING>
-    #   STRING: Text to display.
-
-    printf "${_EOL}%b%64s${_EOL}%b %-63s${_EOL}%b%64s${_EOL}\n" "${_ALERT_WARNING}" '' "${_ALERT_WARNING}" "$1" "${_ALERT_WARNING}" ''
-}
-
-## Print info alert
-##
-## {
-##   "namespace": "colors",
-##   "assumes": [
-##     "_ALERT_INFO",
-##     "_EOL"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "STRING",
-##       "type": "str",
-##       "description": "Text to display.",
-##       "nullable": false
-##     }
-##   ]
-## }
-_alert_info()      {
-    # Synopsis: _alert_info <STRING>
-    #   STRING: Text to display.
-
-    printf "${_EOL}%b%64s${_EOL}%b %-63s${_EOL}%b%64s${_EOL}\n" "${_ALERT_INFO}" '' "${_ALERT_INFO}" "$1" "${_ALERT_INFO}" ''
-}
-
-#--------------------------------------------------
-#_ Compatibility
-#--------------------------------------------------
-
-## Open with default system handler
-##
-## {
-##   "namespace": "compatibility",
-##   "requires": [
-##     "uname"
-##   ]
-## }
+## @namespace src/shell/compatibility
+## @requires printf
+## @depends src/shell/compatibility/_os_type
 _open() {
-    # Synopsis: _open
+    set -- "$(_os_type)"
 
-    if [ "$(uname)" = 'Darwin' ]; then
-        echo 'open'
+    if [ -z "$1" ]; then
 
-        return 0
+        return 1
     fi
 
-    echo 'xdg-open'
+    case "$1" in
+        cygwin|msys) printf 'start' ; return 0 ;;
+        darwin) printf 'open' ; return 0 ;;
+        linux) printf 'xdg-open' ; return 0 ;;
+    esac
+
+    printf 'error: _open: no default handler for os type: "%s"\n' "$1" >&2
+
+    return 1
+}
+
+## Print the current operating system type
+##
+## The kernel name reported by uname is normalised to a short lower case
+## identifier: bsd, cygwin, darwin, linux or msys. Android, Termux and
+## WSL all report a Linux kernel and are therefore reported as linux;
+## use the _is_android, _is_termux and _is_wsl helpers when those
+## environments need to be distinguished.
+##
+## uname is part of POSIX and is preferred over OSTYPE, which is a bash
+## variable that is not always set and may hold an unexpected value.
+##
+## @namespace src/shell/compatibility
+## @requires printf uname
+## @assumes OSTYPE
+_os_type() {
+    if command -v uname >/dev/null 2>&1; then
+        set -- "$(uname -s 2>/dev/null)"
+    else
+        # (warning): In POSIX sh, OSTYPE is undefined.
+        # shellcheck disable=SC3028
+        set -- "${OSTYPE:-}"
+    fi
+
+    case "$1" in
+        Linux*|linux*)
+            printf 'linux'
+            return 0
+            ;;
+        Darwin*|darwin*)
+            printf 'darwin'
+            return 0
+            ;;
+        FreeBSD*|OpenBSD*|NetBSD*|DragonFly*|freebsd*|openbsd*|netbsd*|dragonfly*)
+            printf 'bsd'
+            return 0
+            ;;
+        CYGWIN*|cygwin*)
+            printf 'cygwin'
+            return 0
+            ;;
+        MSYS*|MINGW*|msys*|mingw*)
+            printf 'msys'
+            return 0
+            ;;
+    esac
+
+    printf 'error: _os_type: unknown os type: "%s"\n' "$1" >&2
+
+    return 1
 }
 
 ## Return sed -i system flavour
 ##
-## {
-##   "namespace": "compatibility",
-##   "requires": [
-##     "command",
-##     "sed",
-##     "uname"
-##   ]
-## }
+## @namespace src/shell/compatibility
+## @requires command printf sed uname
 _sed_i() {
-    # Synopsis: _sed_i
-
     if [ "$(uname)" = 'Darwin' ] && [ -n "$(command -v sed)" ] && [ -z "$(sed --version 2>/dev/null)" ]; then
-        echo "sed -i ''"
+        printf "sed -i ''"
 
         return 0
     fi
 
-    echo 'sed -i'
+    printf 'sed -i'
 }
-
-#--------------------------------------------------
-#_ Docker
-#--------------------------------------------------
 
 ## Build container stack with docker compose
 ##
-## {
-##   "namespace": "docker",
-##   "depends": [
-##     "_get_docker_compose",
-##     "_echo_error",
-##     "_echo_info"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "FILE_PATH",
-##       "type": "file",
-##       "description": "The path to the compose.yaml file."
-##     }
-##   ]
-## }
+## @namespace src/shell/docker
+## @requires realpath
+## @depends src/shell/colors/_echo_error src/shell/colors/_echo_info src/shell/docker/_get_docker_compose
+## @param {file} <FILE_PATH> The path to the compose.yaml file.
 _docker_compose_build() {
-    # Synopsis: _docker_compose_build [FILE_PATH]
-    #   FILE_PATH: (optional) The path to the compose.yaml file.
-
     if [ $# -gt 1 ]; then _echo_error "_docker_compose_build: too many arguments ($#)\n"; return 1; fi
 
     if [ -z "$1" ]; then
@@ -1540,64 +1010,46 @@ _docker_compose_build() {
 
 ## Build and start container stack with docker compose
 ##
-## {
-##   "namespace": "docker",
-##   "depends": [
-##     "_get_docker_compose",
-##     "_echo_error",
-##     "_echo_info"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "FILE_PATH",
-##       "type": "file",
-##       "description": "The path to the compose.yaml file."
-##     }
-##   ]
-## }
+## @namespace src/shell/docker
+## @requires realpath
+## @depends src/shell/colors/_echo_error src/shell/colors/_echo_info src/shell/docker/_get_docker_compose
+## @param {file} <FILE_PATH> The path to the compose.yaml file.
+## @param {file} <ENV_FILE> The path to the env file.
 _docker_compose_start() {
-    # Synopsis: _docker_compose_start [FILE_PATH]
-    #   FILE_PATH: (optional) The path to the compose.yaml file.
+    if [ $# -gt 2 ]; then _echo_error "_docker_compose_start: too many arguments ($#)\n"; return 1; fi
 
-    if [ $# -gt 1 ]; then _echo_error "_docker_compose_start: too many arguments ($#)\n"; return 1; fi
+    if [ $# -eq 2 ]; then
+        if [ ! -f "$1" ]; then _echo_error "_docker_compose_start: \"$1\" file not found\n"; return 1; fi
+        if [ ! -f "$2" ]; then _echo_error "_docker_compose_start: \"$2\" file not found\n"; return 1; fi
+        set -- "$(realpath "$1")" "$(realpath "$2")"
 
-    if [ -z "$1" ]; then
-        _echo_info "$(_get_docker_compose) up --detach --remove-orphans\n"
-        $(_get_docker_compose) up --detach --remove-orphans
+        _echo_info "$(_get_docker_compose) --file \"$1\" --env-file \"$2\" up --detach --remove-orphans\n"
+        $(_get_docker_compose) --file "$1" --env-file "$2" up --detach --remove-orphans
 
         return 0
     fi
 
-    set -- "$(realpath "$1")"
-    if [ ! -f "$1" ]; then _echo_error "_docker_compose_start: \"$1\" file not found\n"; return 1; fi
+    if [ $# -eq 1 ]; then
+        if [ ! -f "$1" ]; then _echo_error "_docker_compose_start: \"$1\" file not found\n"; return 1; fi
+        set -- "$(realpath "$1")"
 
-    _echo_info "$(_get_docker_compose) --file \"$1\" up --detach --remove-orphans\n"
-    $(_get_docker_compose) --file "$1" up --detach --remove-orphans
+        _echo_info "$(_get_docker_compose) --file \"$1\" up --detach --remove-orphans\n"
+        $(_get_docker_compose) --file "$1" up --detach --remove-orphans
+
+        return 0
+    fi
+
+    _echo_info "$(_get_docker_compose) up --detach --remove-orphans\n"
+    $(_get_docker_compose) up --detach --remove-orphans
 }
 
 ## Stop container stack with docker compose
 ##
-## {
-##   "namespace": "docker",
-##   "depends": [
-##     "_get_docker_compose",
-##     "_echo_error",
-##     "_echo_info"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "FILE_PATH",
-##       "type": "file",
-##       "description": "The path to the compose.yaml file."
-##     }
-##   ]
-## }
+## @namespace src/shell/docker
+## @requires realpath
+## @depends src/shell/colors/_echo_error src/shell/colors/_echo_info src/shell/docker/_get_docker_compose
+## @param {file} <FILE_PATH> The path to the compose.yaml file.
 _docker_compose_stop() {
-    # Synopsis: _docker_compose_stop [FILE_PATH]
-    #   FILE_PATH: (optional) The path to the compose.yaml file.
-
     if [ $# -gt 1 ]; then _echo_error "_docker_compose_stop: too many arguments ($#)\n"; return 1; fi
 
     if [ -z "$1" ]; then
@@ -1616,20 +1068,11 @@ _docker_compose_stop() {
 
 ## Return docker compose command
 ##
-## {
-##   "namespace": "docker",
-##   "requires": [
-##     "command",
-##     "docker"
-##   ],
-##   "depends": [
-##     "_echo_error"
-##   ]
-## }
+## @namespace src/shell/docker
+## @requires basename command docker docker-compose echo
+## @depends src/shell/colors/_echo_error
 _get_docker_compose() {
-    # Synopsis: _get_docker_compose
-
-    if [ "$(docker compose >/dev/null 2>&1)" ]; then
+    if docker compose >/dev/null 2>&1; then
         echo 'docker compose'
 
         return 0
@@ -1646,55 +1089,18 @@ _get_docker_compose() {
     exit 1
 }
 
-#--------------------------------------------------
-#_ Help
-#--------------------------------------------------
+##################################################
+### Help
+##################################################
 
-## Print help for provider shoe script
+## Print help for a shoe script or one of its commands
 ##
-## {
-##   "namespace": "help",
-##   "depends": [
-##     "_alert_primary",
-##     "_echo_error",
-##     "_get_constants",
-##     "_get_flags",
-##     "_get_function_shoedoc",
-##     "_get_options",
-##     "_get_padding",
-##     "_get_script_shoedoc",
-##     "_get_shoedoc_description",
-##     "_get_shoedoc_title",
-##     "_print_commands",
-##     "_print_constants",
-##     "_print_description",
-##     "_print_flags",
-##     "_print_infos",
-##     "_print_options",
-##     "_print_synopsis",
-##     "_print_usage"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "FILE_PATH",
-##       "type": "file",
-##       "description": "The path to the input file.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "FUNCTION_NAME",
-##       "type": "str",
-##       "description": "The function name to get help for.",
-##     }
-##   ]
-## }
+## @namespace src/shell/help
+## @requires realpath
+## @depends src/shell/colors/_alert_primary src/shell/colors/_echo_error src/shell/colors/_echo_info src/shell/help/_print_command_details src/shell/help/_print_commands src/shell/help/_print_constants src/shell/help/_print_description src/shell/help/_print_flags src/shell/help/_print_infos src/shell/help/_print_options src/shell/help/_print_usage src/shell/reflexion/_get_constants src/shell/reflexion/_get_flags src/shell/reflexion/_get_options src/shell/reflexion/_get_padding src/shell/shoedoc/_get_function_shoedoc src/shell/shoedoc/_get_script_shoedoc src/shell/shoedoc/_get_shoedoc_description src/shell/shoedoc/_get_shoedoc_title
+## @param {file} <FILE_PATH> (required) The path to the input file.
+## @param {str} <COMMAND_NAME> The command name to get detailed help for.
 _help() {
-    # Synopsis: _help <FILE_PATH>
-    #   FILE_PATH: The path to the input file.
-    #   FUNCTION_NAME: The function name to get help for.
-
     if [ -z "$1" ]; then _echo_error '_help: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 2 ]; then _echo_error "_help: too many arguments ($#)\n"; return 1; fi
 
@@ -1728,55 +1134,104 @@ _help() {
     fi
 
     _alert_primary "$2"
-    if [ -x "$(command -v jq)" ]; then
-        __json__="$(_parse_shoedoc "$1" "$2")"
-        if [ -n "${__json__}" ]; then
-            _echo_primary "$(printf '%s' "${__json__}" | jq -r '.summary')\n\n"
-            _echo_secondary "$(_print_synopsis "${__json__}")\n"
-            exit 0
-        fi
+    __annotations__="$(_get_function_shoedoc "$1" "$2")"
+    if [ -n "${__annotations__}" ]; then
+        _print_command_details "$1" "$2" "${__annotations__}"
+        exit 0
     fi
     _echo_info "$(_get_function_shoedoc "$0" "$2")\n"
 }
 
+## Print this help
+##
+## @namespace src/shell/help
+## @depends src/shell/colors/_echo_error
+## @depends src/shell/help/_help
+## @param {str} <COMMAND_NAME> The command name to print detailed help for.
+help() {
+    if [ $# -gt 1 ]; then _echo_error "help: too many arguments ($#)\n"; return 1; fi
+
+    _help "$0" "$1"
+}
+
+## Print detailed help for a given command
+##
+## @namespace src/shell/help
+## @requires printf realpath
+## @depends src/shell/colors/_echo_error
+## @depends src/shell/colors/_echo_primary
+## @depends src/shell/colors/_echo_warning
+## @depends src/shell/help/_print_description
+## @depends src/shell/help/_print_flags
+## @depends src/shell/help/_print_options
+## @depends src/shell/help/_print_usage
+## @depends src/shell/reflexion/_get_padding
+## @depends src/shell/shoedoc/_get_shoedoc_description
+## @depends src/shell/shoedoc/_get_shoedoc_tag
+## @depends src/shell/shoedoc/_get_shoedoc_title
+## @param {file} <FILE_PATH> (required) The path to the input file.
+## @param {str} <COMMAND_NAME> (required) The command name to document.
+## @param {str} <ANNOTATIONS> (required) The shoedoc annotation block, classic @-tags.
+_print_command_details() {
+    if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then _echo_error '_print_command_details: some mandatory parameter is missing\n'; return 1; fi
+    if [ $# -gt 3 ]; then _echo_error "_print_command_details: too many arguments ($#)\n"; return 1; fi
+
+    set -- "$(realpath "$1")" "$2" "$3"
+    if [ ! -f "$1" ]; then _echo_error "_print_command_details: \"$1\" file not found\n"; return 1; fi
+
+    _echo_primary "$(_get_shoedoc_title "$3")\n\n"
+
+    __description__=$(_get_shoedoc_description "$3")
+    if [ -n "${__description__}" ]; then
+        _print_description "${__description__}"
+    fi
+
+    _print_usage "$1" "$2"
+
+    __examples__=$(_get_shoedoc_tag "$3" 'example')
+    if [ -n "${__examples__}" ]; then
+        _echo_warning 'Examples:\n'
+        _echo_primary "${__examples__}\n" 2
+        printf '\n'
+    fi
+
+    __assumes__=$(_get_shoedoc_tag "$3" 'assumes')
+    if [ -n "${__assumes__}" ]; then
+        _echo_warning 'Assumes:\n'
+        _echo_primary "${__assumes__}\n" 2
+        printf '\n'
+    fi
+
+    __stdin__=$(_get_shoedoc_tag "$3" 'stdin')
+    if [ -n "${__stdin__}" ]; then
+        _echo_warning 'Stdin:\n'
+        _echo_primary "${__stdin__}\n" 2
+        printf '\n'
+    fi
+
+    __stdout__=$(_get_shoedoc_tag "$3" 'stdout')
+    if [ -n "${__stdout__}" ]; then
+        _echo_warning 'Stdout:\n'
+        _echo_primary "${__stdout__}\n" 2
+        printf '\n'
+    fi
+
+    __padding__=$(_get_padding "$1")
+
+    _print_flags "$1" "${__padding__}" "$2"
+    _print_options "$1" "${__padding__}" "$2"
+}
+
 ## List commands of the provided shoe script (used by "help" command)
 ##
-## {
-##   "namespace": "help",
-##   "requires": [
-##     "awk"
-##   ],
-##   "depends": [
-##     "_echo_error",
-##     "_echo_warning"
-##   ],
-##   "assumes": [
-##     "PRIMARY",
-##     "SUCCESS",
-##     "WARNING"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "FILE_PATH",
-##       "type": "file",
-##       "description": "The path to the input file.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "PADDING",
-##       "type": "int",
-##       "description": "Padding length.",
-##       "default": 12
-##     }
-##   ]
-## }
+## @namespace src/shell/help
+## @requires awk printf realpath
+## @depends src/shell/colors/_echo_error src/shell/colors/_echo_warning
+## @assumes _PRIMARY _SUCCESS _WARNING
+## @param {file} <FILE_PATH> (required) The path to the input file.
+## @param {int} <PADDING> (default:12) Padding length.
 _print_commands() {
-    # Synopsis: _print_commands <FILE_PATH> [PADDING]
-    #   FILE_PATH: The path to the input file.
-    #   PADDING:   (optional) Padding length (default: 12)
-    #   note:      "awk: %*x formats are not supported"
+    # note: "awk: %*x formats are not supported"
 
     if [ -z "$1" ]; then _echo_error '_print_commands: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 2 ]; then _echo_error "_print_commands: too many arguments ($#)\n"; return 1; fi
@@ -1801,44 +1256,14 @@ _print_commands() {
 
 ## List constants of the provided shoe script (used by "help" command)
 ##
-## {
-##   "namespace": "help",
-##   "requires": [
-##     "awk"
-##   ],
-##   "depends": [
-##     "_echo_error",
-##     "_echo_warning"
-##   ],
-##   "assumes": [
-##     "EOL",
-##     "INFO",
-##     "PRIMARY",
-##     "SUCCESS",
-##     "WARNING"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "FILE_PATH",
-##       "type": "file",
-##       "description": "The path to the input file.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "PADDING",
-##       "type": "int",
-##       "description": "Padding length.",
-##       "default": 12
-##     }
-##   ]
-## }
+## @namespace src/shell/help
+## @requires awk realpath
+## @depends src/shell/colors/_echo_error src/shell/colors/_echo_warning
+## @assumes _EOL _INFO _PRIMARY _SUCCESS _WARNING
+## @param {file} <FILE_PATH> (required) The path to the input file.
+## @param {int} <PADDING> (default:12) Padding length.
 _print_constants() {
-    # Synopsis: _print_constants <FILE_PATH> [PADDING]
-    #   FILE_PATH: The path to the input file.
-    #   PADDING:   (optional) Padding length (default: 12)
-    #   note:      "awk: %*x formats are not supported"
+    # note: "awk: %*x formats are not supported"
 
     if [ -z "$1" ]; then _echo_error '_print_constants: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 2 ]; then _echo_error "_print_constants: too many arguments ($#)\n"; return 1; fi
@@ -1850,115 +1275,128 @@ _print_constants() {
     awk -F '=' -v SUCCESS="${_SUCCESS}" -v PRIMARY="${_PRIMARY}" -v INFO="${_INFO}" -v WARNING="${_WARNING}" -v EOL="${_EOL}" \
     '/^[A-Z0-9_]+=.+$/ {
         if (substr(PREV,1,3) == "## " && substr($0,1,1) != "_")
-        printf "%s  %-'"$2"'s %s%s%s (value: %s%s%s)%s",SUCCESS,$1,PRIMARY,substr(PREV,4),INFO,WARNING,$2,INFO,EOL
-    } { PREV = $0 }' "$1"
+        printf "%s  %-'"$2"'s %s%s%s (value: %s%s%s)%s",SUCCESS,$1,PRIMARY,substr(FIRST,4),INFO,WARNING,$2,INFO,EOL
+    } {
+        # keep the first line of the comment block, it holds the summary
+        if ($0 == "##") {
+            if (FIRST == "" || FIRST == "##") FIRST = $0
+        } else if ($0 ~ /^## @(constant|variable|option|flag)[ \t]/) {
+            if (FIRST == "" || FIRST == "##") {
+                TITLE = substr($0,4)
+                sub(/^@(constant|variable|option|flag)[ \t]+/, "", TITLE)
+                sub(/^\{[^}]*\}[ \t]*/, "", TITLE)
+                sub(/^<[^>]*>[ \t]*/, "", TITLE)
+                sub(/^\[[^]]*\][ \t]*/, "", TITLE)
+                sub(/^\/[^\/]+\/[a-z]*[ \t]*/, "", TITLE)
+                sub(/^\([^)]*\)[ \t]*/, "", TITLE)
+                FIRST = "## " TITLE
+            }
+        } else if (substr($0,1,3) == "## ") {
+            if (substr($0,1,4) != "## @" && (FIRST == "" || FIRST == "##")) FIRST = $0
+        } else {
+            FIRST = ""
+        }
+        PREV = $0
+    }' "$1"
     printf '\n'
 }
 
 ## Print provided text formatted as a description (used by "help" command)
 ##
-## {
-##   "namespace": "help",
-##   "depends": [
-##     "_echo_primary",
-##     "_echo_warning"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "DESCRIPTION",
-##       "type": "str",
-##       "description": "A string containing script description.",
-##       "nullable": false
-##     }
-##   ]
-## }
+## @namespace src/shell/help
+## @requires fold printf
+## @depends src/shell/colors/_echo_primary src/shell/colors/_echo_warning
+## @param {str} <DESCRIPTION> (required) A string containing script description.
 _print_description() {
-    # Synopsis: _print_description <DESCRIPTION>
-    #   DESCRIPTION: A string containing script description.
-
     _echo_warning 'Description:\n'
     _echo_primary "$(printf '%s' "$1" | fold -w 64 -s)\n\n" 2
 }
 
 ## List flags of the provided shoe script (used by "help" command)
 ##
-## {
-##   "namespace": "help",
-##   "requires": [
-##     "awk"
-##   ],
-##   "depends": [
-##     "_echo_error",
-##     "_echo_warning"
-##   ],
-##   "assumes": [
-##     "PRIMARY",
-##     "SUCCESS"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "FILE_PATH",
-##       "type": "file",
-##       "description": "The path to the input file.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "PADDING",
-##       "type": "int",
-##       "description": "Padding length.",
-##       "default": 12
-##     }
-##   ]
-## }
+## @namespace src/shell/help
+## @requires awk grep printf realpath
+## @depends src/shell/colors/_echo_error src/shell/colors/_echo_primary src/shell/colors/_echo_success src/shell/colors/_echo_warning src/shell/reflexion/_get_flags src/shell/reflexion/_get_function_parameters
+## @assumes _PRIMARY _SUCCESS
+## @param {file} <FILE_PATH> (required) The path to the input file.
+## @param {int} <PADDING> (default:12) Padding length.
+## @param {str} <COMMAND_NAME> Optional command whose flags should be added.
 _print_flags() {
-    # Synopsis: _print_flags <FILE_PATH> [PADDING]
-    #   FILE_PATH: The path to the input file.
-    #   PADDING:   (optional) Padding length (default: 12)
-    #   note:      "awk: %*x formats are not supported"
-
     if [ -z "$1" ]; then _echo_error '_print_flags: some mandatory parameter is missing\n'; return 1; fi
-    if [ $# -gt 2 ]; then _echo_error "_print_flags: too many arguments ($#)\n"; return 1; fi
+    if [ $# -gt 3 ]; then _echo_error "_print_flags: too many arguments ($#)\n"; return 1; fi
 
-    set -- "$(realpath "$1")" $((${2:-12}-2))
+    set -- "$(realpath "$1")" $((${2:-12}-2)) "${3:-}"
     if [ ! -f "$1" ]; then _echo_error "_print_flags: \"$1\" file not found\n"; return 1; fi
+
+    __separator__=$(printf '\037')
+    __global_flags__=$(_get_flags "$1")
+    __records__=''
+    if [ -n "$3" ]; then
+        __records__=$(_get_function_parameters "$1" "$3")
+    fi
+
+    if [ -z "${__global_flags__}" ]; then
+        if ! printf '%s\n' "${__records__}" | grep -q "^flag${__separator__}"; then
+            return 0
+        fi
+    fi
 
     _echo_warning 'Flags:\n'
     awk -F '=' -v SUCCESS="${_SUCCESS}" -v PRIMARY="${_PRIMARY}" '/^[a-zA-Z0-9_]+=false$/ {
         if (substr(PREV, 1, 3) == "## " && $1 != toupper($1) && substr($0, 1, 1) != "_")
-        printf "%s  --%-'"$2"'s %s%s\n",SUCCESS,$1,PRIMARY,substr(PREV,4)
-    } { PREV = $0 }' "$1"
+        printf "%s  --%-'"$2"'s %s%s\n",SUCCESS,$1,PRIMARY,substr(FIRST,4)
+    } {
+        # keep the first line of the comment block, it holds the summary
+        if ($0 == "##") {
+            if (FIRST == "" || FIRST == "##") FIRST = $0
+        } else if ($0 ~ /^## @(constant|variable|option|flag)[ \t]/) {
+            if (FIRST == "" || FIRST == "##") {
+                TITLE = substr($0, 4)
+                sub(/^@(constant|variable|option|flag)[ \t]+/, "", TITLE)
+                sub(/^\{[^}]*\}[ \t]*/, "", TITLE)
+                sub(/^<[^>]*>[ \t]*/, "", TITLE)
+                sub(/^\[[^]]*\][ \t]*/, "", TITLE)
+                sub(/^\/[^\/]+\/[a-z]*[ \t]*/, "", TITLE)
+                sub(/^\([^)]*\)[ \t]*/, "", TITLE)
+                FIRST = "## " TITLE
+            }
+        } else if (substr($0, 1, 3) == "## ") {
+            if (substr($0, 1, 4) != "## @" && (FIRST == "" || FIRST == "##")) FIRST = $0
+        } else {
+            FIRST = ""
+        }
+        PREV = $0
+    }' "$1"
+
+    if [ -n "${__records__}" ]; then
+        while IFS="${__separator__}" read -r __kind__ __name__ __short__ \
+              __long__ __constraint__ __default__ __description__; do
+            if [ "${__kind__}" != 'flag' ]; then
+                continue
+            fi
+            case " ${__global_flags__} " in
+                *" ${__name__} "*)
+                    continue
+                    ;;
+            esac
+            __long__="${__long__:-${__name__}}"
+            _echo_success "$(printf '  --%-*s' "$2" "${__long__}")"
+            _echo_primary " ${__description__}\n"
+        done <<EOF
+${__records__}
+EOF
+    fi
+
     printf '\n'
 }
 
 ## Print infos of the provided shoe script (used by "help" command)
 ##
-## {
-##   "namespace": "help",
-##   "depends": [
-##     "_get_script_shoedoc",
-##     "_get_shoedoc_tag",
-##     "_echo_error",
-##     "_echo_primary",
-##     "_echo_success",
-##     "_echo_warning"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "FILE_PATH",
-##       "type": "file",
-##       "description": "The path to the input file.",
-##       "nullable": false
-##     }
-##   ]
-## }
+## @namespace src/shell/help
+## @requires printf realpath
+## @depends src/shell/colors/_echo_error src/shell/colors/_echo_primary src/shell/colors/_echo_success src/shell/colors/_echo_warning src/shell/shoedoc/_get_script_shoedoc src/shell/shoedoc/_get_shoedoc_tag
+## @param {file} <FILE_PATH> (required) The path to the input file.
 _print_infos() {
-    # Synopsis: _print_infos <FILE_PATH>
-    #   FILE_PATH: The path to the input file.
-
     if [ -z "$1" ]; then _echo_error '_print_infos: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 1 ]; then _echo_error "_print_infos: too many arguments ($#)\n"; return 1; fi
 
@@ -1976,106 +1414,127 @@ _print_infos() {
 
 ## List options of the provided shoe script (used by "help" command)
 ##
-## {
-##   "namespace": "help",
-##   "requires": [
-##     "awk"
-##   ],
-##   "depends": [
-##     "_echo_error",
-##     "_echo_warning"
-##   ],
-##   "assumes": [
-##     "DEFAULT",
-##     "EOL",
-##     "INFO",
-##     "SUCCESS",
-##     "WARNING"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "FILE_PATH",
-##       "type": "file",
-##       "description": "The path to the input file.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "PADDING",
-##       "type": "int",
-##       "description": "Padding length.",
-##       "default": 12
-##     }
-##   ]
-## }
+## @namespace src/shell/help
+## @requires awk grep printf realpath
+## @depends src/shell/colors/_echo_error src/shell/colors/_echo_info src/shell/colors/_echo_primary src/shell/colors/_echo_success src/shell/colors/_echo_warning src/shell/reflexion/_get_function_parameters src/shell/reflexion/_get_options
+## @assumes _DEFAULT _EOL _INFO _SUCCESS _WARNING
+## @param {file} <FILE_PATH> (required) The path to the input file.
+## @param {int} <PADDING> (default:12) Padding length.
+## @param {str} <COMMAND_NAME> Optional command whose options should be added.
 _print_options() {
-    # Synopsis: _print_options <FILE_PATH> [PADDING]
-    #   FILE_PATH: The path to the input file.
-    #   PADDING:   (optional) Padding length (default: 12)
-    #   note:      "awk: %*x formats are not supported"
+    # note: "awk: %*x formats are not supported"
 
     if [ -z "$1" ]; then _echo_error '_print_options: some mandatory parameter is missing\n'; return 1; fi
-    if [ $# -gt 2 ]; then _echo_error "_print_options: too many arguments ($#)\n"; return 1; fi
+    if [ $# -gt 3 ]; then _echo_error "_print_options: too many arguments ($#)\n"; return 1; fi
 
-    set -- "$(realpath "$1")" $((${2:-12}-2))
+    set -- "$(realpath "$1")" $((${2:-12}-2)) "${3:-}"
     if [ ! -f "$1" ]; then _echo_error "_print_options: \"$1\" file not found\n"; return 1; fi
+
+    __separator__=$(printf '\037')
+    __global_options__=$(_get_options "$1")
+    __records__=''
+    if [ -n "$3" ]; then
+        __records__=$(_get_function_parameters "$1" "$3")
+    fi
+
+    if [ -z "${__global_options__}" ]; then
+        if ! printf '%s\n' "${__records__}" | grep -q "^option${__separator__}"; then
+            return 0
+        fi
+    fi
 
     _echo_warning "Options:\n"
     awk  -F '=' -v WARNING="${_WARNING}" -v SUCCESS="${_SUCCESS}" -v INFO="${_INFO}" -v DEFAULT="${_DEFAULT}" -v EOL="${_EOL}" \
     '/^[a-zA-Z0-9_]+=.+$/ {
         if (substr(PREV,1,3) == "## " && $1 != toupper($1) && $2 != "false" && substr($0,1,1) != "_") {
-            if (match(PREV,/ \/.+\//)) {
+            if (CONSTRAINT == "" && match(FIRST,/ \/.+\//)) {
                 # if option has constaint
-                CONSTRAINT=substr(PREV,RSTART,RLENGTH);
-                ANNOTATION=substr(PREV,4,length(PREV)-length(CONSTRAINT)-3);
+                CONSTRAINT=substr(FIRST,RSTART,RLENGTH);
+                ANNOTATION=substr(FIRST,4,length(FIRST)-length(CONSTRAINT)-3);
+            } else {
+                ANNOTATION=substr(FIRST,4);
+            }
+            if (CONSTRAINT != "") {
                 printf "%s  --%-'"$2"'s %s%s%s %s%s (default: %s%s%s)%s",SUCCESS,$1,DEFAULT,ANNOTATION,SUCCESS,CONSTRAINT,INFO,WARNING,$2,INFO,EOL
             } else {
-                ANNOTATION=substr(PREV,4);
                 printf "%s  --%-'"$2"'s %s%s%s (default: %s%s%s)%s",SUCCESS,$1,DEFAULT,ANNOTATION,INFO,WARNING,$2,INFO,EOL
             }
         }
-    } { PREV = $0 }' "$1"
+    } {
+        # keep the first line of the comment block, it holds the summary
+        if ($0 == "##") {
+            if (FIRST == "" || FIRST == "##") FIRST = $0
+        } else if ($0 ~ /^## @(constant|variable|option|flag)[ \t]/) {
+            if (FIRST == "" || FIRST == "##") {
+                TITLE = substr($0,4)
+                sub(/^@(constant|variable|option|flag)[ \t]+/, "", TITLE)
+                sub(/^\{[^}]*\}[ \t]*/, "", TITLE)
+                sub(/^<[^>]*>[ \t]*/, "", TITLE)
+                sub(/^\[[^]]*\][ \t]*/, "", TITLE)
+                sub(/^\/[^\/]+\/[a-z]*[ \t]*/, "", TITLE)
+                sub(/^\([^)]*\)[ \t]*/, "", TITLE)
+                FIRST = "## " TITLE
+            }
+            if (CONSTRAINT == "" && match($0, / \/[^\/]+\/[a-z]*/)) {
+                CONSTRAINT = " " substr($0, RSTART + 1, RLENGTH - 1)
+            }
+        } else if (substr($0,1,3) == "## ") {
+            if ($0 ~ /^## @constraint([ \t]|$)/) {
+                CONSTRAINT=substr($0,4);
+                sub(/^@constraint[ \t]*/, "", CONSTRAINT);
+                CONSTRAINT=" " CONSTRAINT;
+            } else if (substr($0,1,4) != "## @" && (FIRST == "" || FIRST == "##")) {
+                FIRST = $0
+            }
+        } else {
+            FIRST = ""
+            CONSTRAINT = ""
+        }
+        PREV = $0
+    }' "$1"
+
+    if [ -n "${__records__}" ]; then
+        while IFS="${__separator__}" read -r __kind__ __name__ __short__ \
+              __long__ __constraint__ __default__ __description__; do
+            if [ "${__kind__}" != 'option' ]; then
+                continue
+            fi
+            case " ${__global_options__} " in
+                *" ${__name__} "*)
+                    continue
+                    ;;
+            esac
+            __long__="${__long__:-${__name__}}"
+            _echo_success "$(printf '  --%-*s' "$2" "${__long__}")"
+            _echo_primary "${__description__}"
+            if [ -n "${__constraint__}" ]; then
+                _echo_success "  ${__constraint__}"
+            fi
+            if [ -n "${__default__}" ]; then
+                _echo_info " (default: ${__default__})"
+            fi
+            printf '\n'
+        done <<EOF
+${__records__}
+EOF
+    fi
+
     printf '\n'
 }
 
 ## Print usage of the provided shoe script (used by "help" command)
 ##
-## {
-##   "namespace": "help",
-##   "requires": [
-##     "awk"
-##   ],
-##   "depends": [
-##     "_echo_error",
-##     "_echo_info",
-##     "_echo_success",
-##     "_echo_warning"
-##   ],
-##   "assumes": [
-##     "DEFAULT",
-##     "INFO",
-##     "SUCCESS",
-##     "WARNING"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "FILE_PATH",
-##       "type": "file",
-##       "description": "The path to the input file.",
-##       "nullable": false
-##     }
-##   ]
-## }
+## @namespace src/shell/help
+## @requires awk basename realpath
+## @depends src/shell/colors/_echo_error src/shell/colors/_echo_info src/shell/colors/_echo_success src/shell/colors/_echo_warning src/shell/reflexion/_get_flags src/shell/reflexion/_get_function_parameters src/shell/reflexion/_get_options
+## @assumes _DEFAULT _INFO _SUCCESS _WARNING
+## @param {file} <FILE_PATH> (required) The path to the input file.
+## @param {str} <COMMAND_NAME> Optional command whose parameters should be added.
 _print_usage() {
-    # Synopsis: _print_usage <FILE_PATH>
-    #   FILE_PATH: The path to the input file.
-
     if [ -z "$1" ]; then _echo_error '_print_usage: some mandatory parameter is missing\n'; return 1; fi
-    if [ $# -gt 1 ]; then _echo_error "_print_usage: too many arguments ($#)\n"; return 1; fi
+    if [ $# -gt 2 ]; then _echo_error "_print_usage: too many arguments ($#)\n"; return 1; fi
 
-    set -- "$(realpath "$1")"
+    set -- "$(realpath "$1")" "${2:-}"
     if [ ! -f "$1" ]; then _echo_error "_print_usage: \"$1\" file not found\n"; return 1; fi
 
     _echo_warning 'Usage:\n'
@@ -2086,86 +1545,94 @@ _print_usage() {
         if (substr(PREV,1,3) != "## " || $1 == toupper($1) || substr($1,1,1) == "_") next;
         if ($2 == "false") {printf "%s[%s--%s%s]%s ",INFO,SUCCESS,$1,INFO,DEFAULT;next}
         printf "%s[%s--%s %s%s%s]%s ",INFO,SUCCESS,$1,WARNING,$2,INFO,DEFAULT
-    } {PREV = $0} END {print "\n"}' "$1"
+    } {PREV = $0}' "$1"
+
+    if [ -n "$2" ]; then
+        __separator__=$(printf '\037')
+        __global_parameters__="$(_get_flags "$1") $(_get_options "$1")"
+        __records__=$(_get_function_parameters "$1" "$2")
+
+        if [ -n "${__records__}" ]; then
+            while IFS="${__separator__}" read -r __kind__ __name__ __short__ \
+                  __long__ __constraint__ __default__ __description__; do
+                case " ${__global_parameters__} " in
+                    *" ${__name__} "*)
+                        continue
+                        ;;
+                esac
+                __long__="${__long__:-${__name__}}"
+
+                _echo_info '['
+                _echo_success "--${__long__}"
+                if [ "${__kind__}" = 'option' ]; then
+                    if [ -n "${__default__}" ]; then
+                        _echo_warning " ${__default__}"
+                    else
+                        _echo_warning ' VALUE'
+                    fi
+                fi
+                _echo_info '] '
+            done <<EOF
+${__records__}
+EOF
+        fi
+    fi
+
+    printf '\n\n'
 }
 
 #--------------------------------------------------
-#_ Install
+#_ Hooks
 #--------------------------------------------------
+
+## Place here commands you need executed last every time (optional)
+##
+## @namespace src/shell/hooks
+_after() {
+    return 0
+}
+
+## Place here commands you need executed by default (optional)
+##
+## @namespace src/shell/hooks
+## @depends src/shell/help/help
+_default() {
+    help ''
+}
 
 ## Install script via copy
 ##
-## {
-##   "namespace": "install",
-##   "depends": [
-##     "_echo_error",
-##     "_echo_info"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "FILE_PATH",
-##       "type": "file",
-##       "description": "The path to the input file.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "ALIAS",
-##       "type": "str",
-##       "description": "The alias of the script to install. Defaults to the basename of the provided file."
-##     }
-##   ]
-## }
+## Creates a symbolic link in the /usr/local/bin/ directory
+##
+## @namespace src/shell/install
+## @requires basename cp realpath sudo
+## @depends src/shell/colors/_echo_error src/shell/colors/_echo_info
+## @param {file} <FILE_PATH> (required) The path to the input file.
+## @param {str} <ALIAS> The alias of the script to install. Defaults to the basename of the provided file.
 _copy_install() {
-    # Synopsis: _copy_install <FILE_PATH> [ALIAS]
-    #   FILE_PATH: The path to the input file.
-    #   ALIAS:     (optional) The alias of the script to install. Defaults to the basename of the provided file
-    #   note:      Creates a symbolic link in the /usr/local/bin/ directory.
-
     if [ -z "$1" ]; then _echo_error '_copy_install: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 2 ]; then _echo_error "_copy_install: too many arguments ($#)\n"; return 1; fi
 
     set -- "$(realpath "$1")" "${2:-"$(basename "$1" .sh)"}"
     if [ ! -f "$1" ]; then _echo_error "_copy_install: \"$1\" file not found\n"; return 1; fi
 
-    _echo_info "sudo cp -a \"$1\" \"/usr/local/bin/$2\"\n"
-    sudo cp -a "$1" "/usr/local/bin/$2"
+    # -a, --archive    same as -dR --preserve=all
+    _echo_info "sudo cp --archive \"$1\" \"/usr/local/bin/$2\"\n"
+    sudo cp --archive "$1" "/usr/local/bin/$2"
 }
 
 ## Generates an autocomplete script for the provided file
 ##
-## {
-##   "namespace": "install",
-##   "depends": [
-##     "_get_comspec",
-##     "_echo_error",
-##     "_echo_info"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "FILE_PATH",
-##       "type": "file",
-##       "description": "The path to the input file.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "ALIAS",
-##       "type": "str",
-##       "description": "The alias of the script to install. Defaults to the basename of the provided file."
-##     }
-##   ]
-## }
+## This function creates a completion script named "<ALIAS>-completion.sh" in the same directory as the script itself.
+## Refer to https://iridakos.com/programming/2018/03/01/bash-programmable-completion-tutorial for details on how to configure shell autocompletions.
+## Or read the official docmentation for "complete" https://www.gnu.org/software/bash/manual/html_node/Programmable-Completion-Builtins.html#Programmable-Completion-Builtins
+##
+## @namespace src/shell/install
+## @requires basename dirname printf realpath
+## @depends src/shell/colors/_echo_error src/shell/colors/_echo_info src/shell/install/_get_comspec
+## @param {file} <FILE_PATH> (required) The path to the input file.
+## @param {str} <ALIAS> The alias of the script to install. Defaults to the basename of the provided file.
 _generate_autocomplete() {
-    # Synopsis: _generate_autocomplete <FILE_PATH> [ALIAS]
-    #   FILE_PATH: The path to the input file.
-    #   ALIAS:     (optional) The alias of the script to autocomplete. Defaults to the basename of the provided file
-    #   note:      This function creates a completion script named "<ALIAS>-completion.sh" in the same directory as the script itself.
-    #              Refer to https://iridakos.com/programming/2018/03/01/bash-programmable-completion-tutorial for details on how to configure shell autocompletions.
-    #              Or read the official docmentation for "complete" https://www.gnu.org/software/bash/manual/html_node/Programmable-Completion-Builtins.html#Programmable-Completion-Builtins
-
     if [ -z "$1" ]; then _echo_error '_generate_autocomplete: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 2 ]; then _echo_error "_generate_autocomplete: too many arguments ($#)\n"; return 1; fi
 
@@ -2178,37 +1645,16 @@ _generate_autocomplete() {
 
 ## Creates a system-wide autocomplete script for the provided file
 ##
-## {
-##   "namespace": "install",
-##   "depends": [
-##     "_get_comspec",
-##     "_echo_error",
-##     "_echo_info"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "FILE_PATH",
-##       "type": "file",
-##       "description": "The path to the input file.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "ALIAS",
-##       "type": "str",
-##       "description": "The alias of the script to install. Defaults to the basename of the provided file."
-##     }
-##   ]
-## }
+## This function creates a completion script named "<ALIAS>" (where "<ALIAS>" is the basename of the provided file)
+## in the /etc/bash_completion.d/ directory, enabling autocompletion for all users on the system.
+## It uses sudo for file creation in a system directory, requiring root privileges.
+##
+## @namespace src/shell/install
+## @requires basename printf realpath sudo tee
+## @depends src/shell/colors/_echo_error src/shell/colors/_echo_info src/shell/install/_get_comspec
+## @param {file} <FILE_PATH> (required) The path to the input file.
+## @param {str} <ALIAS> The alias of the script to install. Defaults to the basename of the provided file.
 _generate_global_autocomplete() {
-    # Synopsis: _generate_global_autocomplete <FILE_PATH> [ALIAS]
-    #   FILE_PATH: The path to the input file.
-    #   ALIAS:     (optional) The alias of the script to autocomplete. Defaults to the basename of the provided file
-    #   note:      This function creates a completion script named "<ALIAS>" (where "<ALIAS>" is the basename of the provided file)
-    #              in the /etc/bash_completion.d/ directory, enabling autocompletion for all users on the system.
-    #              It uses sudo for file creation in a system directory, requiring root privileges.
-
     if [ -z "$1" ]; then _echo_error '_generate_global_autocomplete: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 2 ]; then _echo_error "_generate_global_autocomplete: too many arguments ($#)\n"; return 1; fi
 
@@ -2221,28 +1667,11 @@ _generate_global_autocomplete() {
 
 ## Generate comspec string for the provided file
 ##
-## {
-##   "namespace": "install",
-##   "requires": [
-##     "awk"
-##   ],
-##   "depends": [
-##     "_echo_error"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "FILE_PATH",
-##       "type": "file",
-##       "description": "The path to the input file.",
-##       "nullable": false
-##     }
-##   ]
-## }
+## @namespace src/shell/install
+## @requires awk realpath
+## @depends src/shell/colors/_echo_error
+## @param {file} <FILE_PATH> (required) The path to the input file.
 _get_comspec() {
-    # Synopsis: _get_comspec <FILE_PATH>
-    #   FILE_PATH: The path to the input file.
-
     if [ -z "$1" ]; then _echo_error '_get_comspec: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 1 ]; then _echo_error "_get_comspec: too many arguments ($#)\n"; return 1; fi
 
@@ -2266,46 +1695,13 @@ _get_comspec() {
 
 ## Install script and enable autocompletion
 ##
-## {
-##   "namespace": "install",
-##   "depends": [
-##     "_copy_install",
-##     "_generate_autocomplete",
-##     "_generate_global_autocomplete",
-##     "_is_installed",
-##     "_set_completion_autoload",
-##     "_symlink_install",
-##     "_echo_error"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "FILE_PATH",
-##       "type": "file",
-##       "description": "The path to the input file.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "ALIAS",
-##       "type": "str",
-##       "description": "The alias of the script to install. Defaults to the basename of the provided file."
-##     },
-##     {
-##       "position": 3,
-##       "name": "GLOBAL",
-##       "type": "bool",
-##       "description": "Install globally.",
-##       "default": false
-##     }
-##   ]
-## }
+## @namespace src/shell/install
+## @requires basename bash realpath touch true uname zsh
+## @depends src/shell/colors/_echo_error src/shell/install/_copy_install src/shell/install/_generate_autocomplete src/shell/install/_generate_global_autocomplete src/shell/install/_set_completion_autoload src/shell/install/_symlink_install src/shell/system/_is_installed
+## @param {file} <FILE_PATH> (required) The path to the input file.
+## @param {str} <ALIAS> The alias of the script to install. Defaults to the basename of the provided file.
+## @param {bool} <GLOBAL> (default:false) Install globally.
 _install() {
-    # Synopsis: _install <FILE_PATH> [ALIAS] [GLOBAL]
-    #   FILE_PATH: The path to the input file.
-    #   ALIAS:     (optional) The alias of the script to install. Defaults to the basename of the provided script.
-    #   GLOBAL:    (optional) Install globally. Defaults to "false".
-
     if [ -z "$1" ]; then _echo_error '_install: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 3 ]; then _echo_error "_install: too many arguments ($#)\n"; return 1; fi
 
@@ -2340,35 +1736,14 @@ _install() {
 
 ## Remove completion script autoload
 ##
-## {
-##   "namespace": "install",
-##   "depends": [
-##     "_sed_i",
-##     "_echo_error",
-##     "_echo_info"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "SHELL_CONFIG_FILE",
-##       "type": "file",
-##       "description": "The path to the shell configuration file to update (e.g., ~/.bashrc, ~/.zshrc).",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "ALIAS",
-##       "type": "str",
-##       "description": "The alias of the script to install. Defaults to the basename of the provided file."
-##     }
-##   ]
-## }
+## Removes an autoload line for a completion script from a shell rc configuration file
+##
+## @namespace src/shell/install
+## @requires basename realpath
+## @depends src/shell/colors/_echo_error src/shell/colors/_echo_info src/shell/compatibility/_sed_i
+## @param {file} <SHELL_CONFIG_FILE> (required) The path to the shell configuration file to update (e.g., ~/.bashrc, ~/.zshrc).
+## @param {str} <ALIAS> The alias of the script to install. Defaults to the basename of the provided file.
 _remove_completion_autoload() {
-    # Synopsis: _remove_completion_autoload <SHELL_CONFIG_FILE> [ALIAS]
-    # Removes an autoload line for a completion script from a shell configuration file.
-    #   SHELL_CONFIG_FILE: The path to the shell configuration file to update (e.g., ~/.bashrc, ~/.zshrc).
-    #   ALIAS:             (optional) The alias of the script to remove. Defaults to the basename of the provided file
-
     if [ $# -lt 1 ]; then _echo_error '_remove_completion_autoload: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 2 ]; then _echo_error "_remove_completion_autoload: too many arguments ($#)\n"; return 1; fi
 
@@ -2386,43 +1761,13 @@ _remove_completion_autoload() {
 
 ## Adds an autoload line for completion script to a shell configuration file
 ##
-## {
-##   "namespace": "install",
-##   "depends": [
-##     "_collapse_blank_lines",
-##     "_sed_i",
-##     "_echo_error",
-##     "_echo_info"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "SHELL_CONFIG_FILE",
-##       "type": "file",
-##       "description": "The path to the shell configuration file to update (e.g., ~/.bashrc, ~/.zshrc).",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "SCRIPT_FILE_PATH",
-##       "type": "file",
-##       "description": "The path to the input file.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 3,
-##       "name": "ALIAS",
-##       "type": "str",
-##       "description": "The alias of the script to install. Defaults to the basename of the provided file."
-##     }
-##   ]
-## }
+## @namespace src/shell/install
+## @requires basename dirname printf realpath
+## @depends src/shell/colors/_echo_error src/shell/colors/_echo_info src/shell/compatibility/_sed_i src/shell/strings/_collapse_blank_lines
+## @param {file} <SHELL_CONFIG_FILE> (required) The path to the shell configuration file to update (e.g., ~/.bashrc, ~/.zshrc).
+## @param {file} <SCRIPT_FILE_PATH> (required) The path to the input file.
+## @param {str} <ALIAS> The alias of the script to install. Defaults to the basename of the provided file.
 _set_completion_autoload() {
-    # Synopsis: _set_completion_autoload <SHELL_CONFIG_FILE_PATH> <SCRIPT_FILE_PATH> [ALIAS]
-    #   SHELL_CONFIG_FILE_PATH: The path to the shell configuration file to be modified (e.g., ~/.bashrc, ~/.zshrc).
-    #   SCRIPT_FILE_PATH:       The path to the input file.
-    #   ALIAS:                  (optional) The alias of the input script. Defaults to the basename of the provided file
-
     if [ -z "$1" ]  || [ -z "$2" ]; then _echo_error '_set_completion_autoload: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 3 ]; then _echo_error "_set_completion_autoload: too many arguments ($#)\n"; return 1; fi
 
@@ -2455,79 +1800,35 @@ _set_completion_autoload() {
 
 ## Install script via symlink
 ##
-## {
-##   "namespace": "install",
-##   "depends": [
-##     "_echo_error",
-##     "_echo_info"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "FILE_PATH",
-##       "type": "file",
-##       "description": "The path to the input file.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "ALIAS",
-##       "type": "str",
-##       "description": "The alias of the script to install. Defaults to the basename of the provided file."
-##     }
-##   ]
-## }
+## @namespace src/shell/install
+## @requires basename ln realpath sudo true
+## @depends src/shell/colors/_echo_error src/shell/colors/_echo_info
+## @param {file} <FILE_PATH> (required) The path to the input file.
+## @param {str} <ALIAS> The alias of the script to install. Defaults to the basename of the provided file.
 _symlink_install(){
-    # Synopsis: _symlink_install <FILE_PATH> [ALIAS]
-    #   FILE_PATH: The path to the input file.
-    #   ALIAS:     (optional) The alias of the script to install. Defaults to the basename of the provided file
-    #   note:      Creates a symbolic link in the /usr/local/bin/ directory.
-
     if [ -z "$1" ]; then _echo_error '_symlink_install some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 2 ]; then _echo_error "_symlink_install too many arguments ($#)\n"; return 1; fi
-
-    set -- "$(realpath "$1")" "${2:-"$(basename "$1" .sh)"}"
     if [ ! -f "$1" ]; then _echo_error "_symlink_install \"$1\" file not found\n"; return 1; fi
 
-    _echo_info "sudo ln -s \"$1\" \"/usr/local/bin/$2\"\n"
-    sudo ln -s "$1" "/usr/local/bin/$2"
+    set -- "$(realpath "$1")" "${2:-"$(basename "$1" .sh)"}"
+
+    _echo_info "sudo ln -s \"$1\" \"/usr/local/bin/$2\" || true\n"
+    sudo ln -s "$1" "/usr/local/bin/$2" || true
 }
 
 ## Uninstall script from system
 ##
-## {
-##   "namespace": "install",
-##   "depends": [
-##     "_remove_completion_autoload",
-##     "_echo_error",
-##     "_echo_info"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "FILE_PATH",
-##       "type": "file",
-##       "description": "The path to the input file.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "ALIAS",
-##       "type": "str",
-##       "description": "The alias of the script to install. Defaults to the basename of the provided file."
-##     }
-##   ]
-## }
+## @namespace src/shell/install
+## @requires basename dirname realpath rm sudo
+## @depends src/shell/colors/_echo_error src/shell/colors/_echo_info src/shell/install/_remove_completion_autoload
+## @param {file} <FILE_PATH> (required) The path to the input file.
+## @param {str} <ALIAS> The alias of the script to install. Defaults to the basename of the provided file.
 _uninstall() {
-    # Synopsis: _uninstall <FILE_PATH> [ALIAS]
-    #   FILE_PATH: The path to the input file.
-    #   ALIAS:     (optional) The alias of the script to uninstall. Defaults to the basename of the provided script.
-
     if [ -z "$1" ]; then _echo_error '_uninstall: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 2 ]; then _echo_error "_uninstall: too many arguments ($#)\n"; return 1; fi
+    if [ ! -f "$1" ]; then _echo_error "_uninstall: \"$1\" file not found\n"; return 1; fi
 
     set -- "$(realpath "$1")" "${2:-"$(basename "$1" .sh)"}"
-    if [ ! -f "$1" ]; then _echo_error "_uninstall: \"$1\" file not found\n"; return 1; fi
 
     _remove_completion_autoload ~/.zshrc "$2"
     _remove_completion_autoload ~/.bashrc "$2"
@@ -2547,35 +1848,13 @@ _uninstall() {
     fi
 }
 
-#--------------------------------------------------
-#_ Prompts
-#--------------------------------------------------
-
 ## Promt user for yes or no
 ##
-## {
-##   "namespace": "prompts",
-##   "requires": [
-##     "grep"
-##   ],
-##   "depends": [
-##     "_echo_success",
-##     "_echo_warning"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "QUESTION",
-##       "type": "str",
-##       "description": "A string containing the question.",
-##       "default": "Confirm ?"
-##     }
-##   ]
-## }
+## @namespace src/shell/prompts
+## @requires echo grep
+## @depends src/shell/colors/_echo_success src/shell/colors/_echo_warning
+## @param {str} <QUESTION> (default:"Confirm ?") A string containing the question.
 _yes_no() {
-    # Synopsis: _yes_no [QUESTION]
-    #   QUESTION: (optional) A string containing the question. Defaults to "Confirm ?".
-
     set -- "${1:-Confirm ?} (yes/no): "
 
     _echo_success "$1"; _echo_warning "[no] "
@@ -2589,42 +1868,14 @@ _yes_no() {
     return 1
 }
 
-#--------------------------------------------------
-#_ Reflexion
-#--------------------------------------------------
-
 ## List constants from provided shoe script
 ##
-## {
-##   "namespace": "reflexion",
-##   "requires": [
-##     "awk"
-##   ],
-##   "depends": [
-##     "_echo_error"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "SCRIPT_PATH",
-##       "type": "file",
-##       "description": "The path to the input script.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "GET_PRIVATE",
-##       "type": "bool",
-##       "description": "If set to \"true\", retrieves private constants as well.",
-##       "default": false
-##     }
-##   ]
-## }
+## @namespace src/shell/reflexion
+## @requires awk realpath
+## @depends src/shell/colors/_echo_error
+## @param {file} <SCRIPT_PATH> (required) The path to the input script.
+## @param {bool} <GET_PRIVATE> (default:false) If set to "true", retrieves private constants as well.
 _get_constants() {
-    # Synopsis: _get_constants <SCRIPT_PATH> [GET_PRIVATE]
-    #   SCRIPT_PATH: The path to the input script.
-    #   GET_PRIVATE: (Optional) If set to 'true', retrieves private constants as well. (default=false)
-
     if [ -z "$1" ]; then _echo_error '_get_constants: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 2 ]; then _echo_error "_get_constants: too many arguments ($#)\n"; return 1; fi
 
@@ -2643,75 +1894,69 @@ _get_constants() {
 
 ## Get constaint for given variable from provided shoe script
 ##
-## {
-##   "namespace": "reflexion",
-##   "requires": [
-##     "awk"
-##   ],
-##   "depends": [
-##     "_echo_error"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "SCRIPT_PATH",
-##       "type": "file",
-##       "description": "The path to the input script.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "VARIABLE_NAME",
-##       "type": "str",
-##       "description": "The variable to validate.",
-##       "nullable": false
-##     }
-##   ]
-## }
+## @namespace src/shell/reflexion
+## @requires awk realpath
+## @depends src/shell/colors/_echo_error
+## @param {file} <SCRIPT_PATH> (required) The path to the input script.
+## @param {str} <VARIABLE_NAME> (required) The variable to validate.
 _get_constraint() {
-    # Synopsis: _get_constraint <SCRIPT_PATH> <VARIABLE_NAME>
-    #   SCRIPT_PATH:   The path to the input script.
-    #   VARIABLE_NAME: The variable to validate.
-
     if [ -z "$1" ] || [ -z "$2" ]; then _echo_error '_get_constraint: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 2 ]; then _echo_error "_get_constraint: too many arguments ($#)\n"; return 1; fi
 
     set -- "$(realpath "$1")" "$2"
     if [ ! -f "$1" ]; then _echo_error "_get_constraint: \"$1\" file not found\n"; return 1; fi
 
-    awk -F '=' -v NAME="$2" \
-    '/^## /{if (annotation=="") annotation=substr($0,4)}
-    /^[a-zA-Z0-9_]+=.+$/ {
-        if (annotation!="" && $1 == NAME) {
-            match(annotation, /\/.+\//); print substr(annotation, RSTART, RLENGTH)
+    awk -F '=' -v NAME="$2" '
+    function trim(value) {
+        sub(/^[ \t]+/, "", value)
+        sub(/[ \t]+$/, "", value)
+        return value
+    }
+
+    /^## / {
+        body = substr($0, 4)
+        if (body ~ /^@constraint([ \t]|$)/) {
+            sub(/^@constraint[ \t]*/, "", body)
+            CONSTRAINT = trim(body)
+        } else if (body ~ /^@(variable|option|constant)[ \t]/) {
+            if (match(body, /\/.+\//)) {
+                if (CONSTRAINT == "") {
+                    CONSTRAINT = substr(body, RSTART, RLENGTH)
+                }
+            } else if (TITLE == "") {
+                TITLE = body
+            }
+        } else if (TITLE == "" && substr(body, 1, 1) != "@") {
+            TITLE = body
         }
-    } !/^## */{annotation=""}' "$1"
+        next
+    }
+
+    $0 == "##" { next }
+
+    /^[a-zA-Z0-9_]+=.+$/ {
+        if ($1 == NAME) {
+            if (CONSTRAINT != "") { print CONSTRAINT; exit }
+            if (TITLE != "" && match(TITLE, /\/.+\//)) {
+                print substr(TITLE, RSTART, RLENGTH); exit
+            }
+        }
+        TITLE = ""
+        CONSTRAINT = ""
+        next
+    }
+
+    { TITLE = ""; CONSTRAINT = "" }
+    ' "$1"
 }
 
 ## List flags from provided shoe script
 ##
-## {
-##   "namespace": "reflexion",
-##   "requires": [
-##     "awk"
-##   ],
-##   "depends": [
-##     "_echo_error"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "SCRIPT_PATH",
-##       "type": "file",
-##       "description": "The path to the input script.",
-##       "nullable": false
-##     }
-##   ]
-## }
+## @namespace src/shell/reflexion
+## @requires awk realpath
+## @depends src/shell/colors/_echo_error
+## @param {file} <SCRIPT_PATH> (required) The path to the input script.
 _get_flags() {
-    # Synopsis: _get_flags <SCRIPT_PATH>
-    #   SCRIPT_PATH: The path to the input script.
-
     if [ -z "$1" ]; then _echo_error '_get_flags: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 1 ]; then _echo_error "_get_flags: too many arguments ($#)\n"; return 1; fi
 
@@ -2723,104 +1968,132 @@ _get_flags() {
     } {PREV = $0}' "$1"
 }
 
-## Get function by name
+## List options and flags declared in a function shoedoc annotation
 ##
-## {
-##   "namespace": "reflexion",
-##   "requires": [
-##     "awk"
-##   ],
-##   "depends": [
-##     "_echo_error"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "SCRIPT_PATH",
-##       "type": "file",
-##       "description": "The path to the input script.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "FUNCTION_NAME",
-##       "type": "str",
-##       "description": "The name of the function to retrieve.",
-##       "nullable": false
-##     }
-##   ]
-## }
-_get_function() {
-    # Synopsis: _get_function <SCRIPT_PATH> <FUNCTION_NAME>
-    #   SCRIPT_PATH:   The path to the input file.
-    #   FUNCTION_NAME: The name of the function to retrieve.
-
-    if [ -z "$1" ] || [ -z "$2" ]; then _echo_error '_get_function: some mandatory parameter is missing\n'; return 1; fi
-    if [ $# -gt 2 ]; then _echo_error "_get_function: too many arguments ($#)\n"; return 1; fi
+## Outputs one record per entry with fields separated by the ASCII unit
+## separator: kind, name, short alias, long alias, constraint, default
+## value and description.
+##
+## @namespace src/shell/reflexion
+## @requires awk printf realpath
+## @depends src/shell/colors/_echo_error src/shell/shoedoc/_get_function_shoedoc
+## @stdout one record per option or flag, fields separated by ASCII 31.
+## @param {file} <SCRIPT_PATH> (required) The path to the input script.
+## @param {str} <FUNCTION_NAME> (required) The name of the function to inspect.
+_get_function_parameters() {
+    if [ -z "$1" ] || [ -z "$2" ]; then _echo_error '_get_function_parameters: some mandatory parameter is missing\n'; return 1; fi
+    if [ $# -gt 2 ]; then _echo_error "_get_function_parameters: too many arguments ($#)\n"; return 1; fi
 
     set -- "$(realpath "$1")" "$2"
-    if [ ! -f "$1" ]; then _echo_error "_get_function: \"$1\" file not found\n"; return 1; fi
+    if [ ! -f "$1" ]; then _echo_error "_get_function_parameters: \"$1\" file not found\n"; return 1; fi
 
-    awk -v FUNCTION_NAME="$2" '
-    function count_occurrences(str,char) {
-        gsub("\\.","",str); # remove escaped characters
-        gsub(/"[^"]*"/,""); # remove quoted string
-        return gsub(char,char,str);
-    }
-    /^#/ { annotation=annotation"\n"$0 }
-    in_function {
-        print $0;
-        count=count_occurrences($0,"{")-count_occurrences($0,"}");
-        # count+=gsub("{","&")-gsub("}","&");
-        if (count==0) exit
-    }
-    /^(function +)?[a-zA-Z0-9_]+ *\(\)/ {           # matches a function (ignoring curly braces)
-        function_name=substr($0,1,index($0,"(")-1); # truncate string at opening round bracket
-        sub("^function ","",function_name);         # remove leading "function " if present
-        gsub(" +","",function_name);                # trim whitespaces
-        if (function_name==FUNCTION_NAME) {
-            if (annotation!="") print substr(annotation,2); # print annotation (without leading "\n")
-            print $0;
-            in_function=1;
-            count=count_occurrences($0,"{")-count_occurrences($0,"}"); # count opened and closed curly braces on current line
-            # count=gsub("{","&")-gsub("}","&"); # count opened and closed curly braces on current line
+    printf '%s\n' "$(_get_function_shoedoc "$1" "$2")" | awk '
+        BEGIN {
+            separator = sprintf("%c", 31)
         }
-    }
-    !/^#/ { annotation="" }' "$1"
+
+        function trim(value) {
+            sub(/^[ \t]+/, "", value)
+            sub(/[ \t]+$/, "", value)
+            return value
+        }
+
+        function emit(kind, value,    type, name, short, long_name,
+                      constraint, default_value, stop, position, aliases,
+                      parts, count, i, token) {
+            value = trim(value)
+            type = ""
+            name = ""
+            short = ""
+            long_name = ""
+            constraint = ""
+            default_value = ""
+
+            if (substr(value, 1, 1) == "{") {
+                stop = index(value, "}")
+                if (stop > 0) {
+                    type = substr(value, 2, stop - 2)
+                    value = trim(substr(value, stop + 1))
+                }
+            }
+
+            if (substr(value, 1, 1) == "<") {
+                stop = index(value, ">")
+                if (stop > 0) {
+                    name = substr(value, 2, stop - 2)
+                    value = trim(substr(value, stop + 1))
+                }
+            }
+            if (name == "")
+                return
+
+            if (substr(value, 1, 1) == "[") {
+                stop = index(value, "]")
+                if (stop > 0) {
+                    aliases = substr(value, 2, stop - 2)
+                    value = trim(substr(value, stop + 1))
+                    count = split(aliases, parts, "|")
+                    for (i = 1; i <= count; i++) {
+                        token = trim(parts[i])
+                        if (substr(token, 1, 2) == "--")
+                            long_name = substr(token, 3)
+                        else if (substr(token, 1, 1) == "-")
+                            short = substr(token, 2)
+                        else if (long_name == "")
+                            long_name = token
+                    }
+                }
+            }
+
+            if (kind == "option" && substr(value, 1, 1) == "/") {
+                position = index(value, " ")
+                if (position == 0) {
+                    constraint = value
+                    value = ""
+                } else {
+                    constraint = substr(value, 1, position - 1)
+                    value = trim(substr(value, position + 1))
+                }
+            }
+
+            if (kind == "option" && substr(value, 1, 1) == "(") {
+                stop = index(value, ")")
+                if (stop > 0) {
+                    token = trim(substr(value, 2, stop - 2))
+                    value = trim(substr(value, stop + 1))
+                    if (substr(token, 1, 8) == "default:")
+                        default_value = substr(token, 9)
+                }
+            }
+
+            printf "%s%s%s%s%s%s%s%s%s%s%s%s%s\n", kind, separator,
+                name, separator, short, separator, long_name, separator,
+                constraint, separator, default_value, separator, value
+        }
+
+        {
+            line = $0
+            sub(/^##[ \t]?/, "", line)
+            line = trim(line)
+            if (line ~ /^@option[ \t]/) {
+                sub(/^@option[ \t]+/, "", line)
+                emit("option", line)
+            } else if (line ~ /^@flag[ \t]/) {
+                sub(/^@flag[ \t]+/, "", line)
+                emit("flag", line)
+            }
+        }
+    '
 }
 
 ## List functions names from provided shoe script
 ##
-## {
-##   "namespace": "reflexion",
-##   "requires": [
-##     "awk"
-##   ],
-##   "depends": [
-##     "_echo_error"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "SCRIPT_PATH",
-##       "type": "file",
-##       "description": "The path to the input script.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "GET_PRIVATE",
-##       "type": "bool",
-##       "description": "If set to \"true\", retrieves private functions as well.",
-##       "default": false
-##     }
-##   ]
-## }
+## @namespace src/shell/reflexion
+## @requires awk realpath
+## @depends src/shell/colors/_echo_error
+## @param {file} <SCRIPT_PATH> (required) The path to the input script.
+## @param {bool} <GET_PRIVATE> (default:false) If set to "true", retrieves private functions as well.
 _get_functions_names() {
-    # Synopsis: _get_functions_names <SCRIPT_PATH> [GET_PRIVATE]
-    #   SCRIPT_PATH: The path to the input script.
-    #   GET_PRIVATE: (Optional) If set to 'true', retrieves private functions as well. Defaults to "false".
-
     if [ -z "$1" ]; then _echo_error '_get_functions_names: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 2 ]; then _echo_error "_get_functions_names: too many arguments ($#)\n"; return 1; fi
 
@@ -2843,36 +2116,12 @@ _get_functions_names() {
 
 ## List options from provided shoe script
 ##
-## {
-##   "namespace": "reflexion",
-##   "requires": [
-##     "awk"
-##   ],
-##   "depends": [
-##     "_echo_error"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "SCRIPT_PATH",
-##       "type": "file",
-##       "description": "The path to the input script.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "GET_PRIVATE_ONLY",
-##       "type": "bool",
-##       "description": "If set to \"true\", retrieves private options only.",
-##       "default": false
-##     }
-##   ]
-## }
+## @namespace src/shell/reflexion
+## @requires awk realpath
+## @depends src/shell/colors/_echo_error
+## @param {file} <SCRIPT_PATH> (required) The path to the input script.
+## @param {bool} <GET_PRIVATE_ONLY> (default:false) If set to "true", retrieves private options only.
 _get_options() {
-    # Synopsis: _get_options <SCRIPT_PATH> [GET_PRIVATE_ONLY]
-    #   SCRIPT_PATH:      The path to the input script.
-    #   GET_PRIVATE_ONLY: (Optional) If set to 'true', retrieves private options only. Defaults to "false".
-
     if [ -z "$1" ]; then _echo_error '_get_options: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 2 ]; then _echo_error "_get_options: too many arguments ($#)\n"; return 1; fi
 
@@ -2891,28 +2140,11 @@ _get_options() {
 
 ## Guess padding length from longest constant, option, flag or command of the provided shoe script
 ##
-## {
-##   "namespace": "reflexion",
-##   "requires": [
-##     "awk"
-##   ],
-##   "depends": [
-##     "_echo_error"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "SCRIPT_PATH",
-##       "type": "file",
-##       "description": "The path to the input script.",
-##       "nullable": false
-##     }
-##   ]
-## }
+## @namespace src/shell/reflexion
+## @requires awk realpath
+## @depends src/shell/colors/_echo_error
+## @param {file} <SCRIPT_PATH> (required) The path to the input script.
 _get_padding() {
-    # Synopsis: _get_padding <SCRIPT_PATH>
-    #   SCRIPT_PATH: The path to the input script.
-
     if [ -z "$1" ]; then _echo_error '_get_padding: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 1 ]; then _echo_error "_get_padding: too many arguments ($#)\n"; return 1; fi
 
@@ -2932,37 +2164,12 @@ _get_padding() {
 
 ## Get value for given parameter from provided ".env" or ".sh" file
 ##
-## {
-##   "namespace": "reflexion",
-##   "requires": [
-##     "sed"
-##   ],
-##   "depends": [
-##     "_echo_error",
-##     "_echo_info"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "FILE_PATH",
-##       "type": "file",
-##       "description": "The path to the input file.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "KEY",
-##       "type": "str",
-##       "description": "The variable name to get from provided file.",
-##       "nullable": false
-##     }
-##   ]
-## }
+## @namespace src/shell/reflexion
+## @requires realpath sed
+## @depends src/shell/colors/_echo_error
+## @param {file} <FILE_PATH> (required) The path to the input file.
+## @param {str} <KEY> (required) The variable name to get from provided file.
 _get_parameter() {
-    # Synopsys : _get_parameter <FILE_PATH> <KEY>
-    #   FILE_PATH: The path to the input file.
-    #   KEY:       The variable name to get from provided file.
-
     if [ -z "$1" ] || [ -z "$2" ]; then _echo_error '_get_parameter: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 2 ]; then _echo_error "_get_parameter: too many arguments ($#)\n"; return 1; fi
     if [ ! -f "$1" ]; then _echo_error "_get_parameter: \"$1\" file not found\n"; return 1; fi
@@ -2973,37 +2180,12 @@ _get_parameter() {
 
 ## Tests if parameter exists in provided ".env" or ".sh" file
 ##
-## {
-##   "namespace": "reflexion",
-##   "requires": [
-##     "sed"
-##   ],
-##   "depends": [
-##     "_echo_error",
-##     "_echo_info"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "FILE_PATH",
-##       "type": "file",
-##       "description": "The path to the input file.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "KEY",
-##       "type": "str",
-##       "description": "The variable name to get from provided file.",
-##       "nullable": false
-##     }
-##   ]
-## }
+## @namespace src/shell/reflexion
+## @requires grep realpath
+## @depends src/shell/colors/_echo_error
+## @param {file} <FILE_PATH> (required) The path to the input file.
+## @param {str} <KEY> (required) The variable name to get from provided file.
 _has_parameter() {
-    # Synopsys : _has_parameter <FILE_PATH> <KEY>
-    #   FILE_PATH: The path to the input file.
-    #   KEY:       The variable name to get from provided file.
-
     if [ -z "$1" ] || [ -z "$2" ]; then _echo_error '_has_parameter: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 2 ]; then _echo_error "_has_parameter: too many arguments ($#)\n"; return 1; fi
     if [ ! -f "$1" ]; then _echo_error "_has_parameter: \"$1\" file not found\n"; return 1; fi
@@ -3012,118 +2194,15 @@ _has_parameter() {
     grep -q "^${2}=" "$1"
 }
 
-## Print function synopsis from a JSON string.
-##
-## {
-##   "namespace": "reflexion",
-##   "requires": [
-##     "jq"
-##   ],
-##   "depends": [
-##     "_echo_error"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "JSON",
-##       "type": "json",
-##       "description": "The input string containing raw JSON.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "MARKDOWN_FORMAT",
-##       "type": "bool",
-##       "description": "If set to \"true\", returns result as markdown.",
-##       "default": false
-##     }
-##   ]
-## }
-_print_synopsis() {
-    # Synopsis: _print_synopsis <JSON> [MARKDOWN_FORMAT]
-    #   JSON: The input string containing raw JSON.
-    #   MARKDOWN_FORMAT: (Optional) If set to 'true', returns result as markdown. Defaults to "false".
-
-    if [ -z "$1" ]; then _echo_error '_print_synopsis: some mandatory parameter is missing\n'; return 1; fi
-    if [ $# -gt 2 ]; then _echo_error "_print_synopsis: too many arguments ($#)\n"; return 1; fi
-    if ! printf '%s' "$1" | jq empty >/dev/null 2>&1; then _echo_error "_print_synopsis: invalid JSON input\n"; return 1; fi
-
-    if [ "${2:-false}" = "true" ]; then
-        printf '> Synopsis:\n> '
-    else
-        printf 'Synopsis: '
-    fi
-
-    printf '%s' "$1" | jq -rj '.name'
-
-    if [ "${2:-false}" = "true" ]; then
-        printf '%s' "$1" | jq -rj '[.parameters // [] | .[] | if (.nullable|tostring) == "false" then " &lt;\(.name)&gt;" else " [\(.name)]" end] | join("")'
-        printf '\n'
-        printf '%s' "$1" | jq -r '.parameters // [] | .[] | "`\(.name)`: \(if .type then "_(type: \"\(.type)\")_ " else "" end)\(if (.nullable|tostring) == "false" then "" else "(optional) " end)\(if .description then .description else "" end)\(if has("default") then " _Defaults to \"\(.default|tostring)\"._" else "" end)"' | while read -r line; do
-            printf '%s\n' "- ${line}"
-        done
-        printf '\n'
-        printf '%s' "$1" | jq -rj '[.requires // [] | .[] | "`\(.)`"] | if length > 0 then "- ⚠️ Requires: \(.|join(", "))\n" else "" end'
-        printf '%s' "$1" | jq -rj '[.depends // [] | .[] | "`\(.)`"] | if length > 0 then "- 🔗 Depends: \(.|join(", "))\n" else "" end'
-        printf '\n'
-        return 0
-    fi
-
-    printf '%s' "$1" | jq -rj 'if .scope then " (\(.scope)) " else "" end'
-    printf '%s' "$1" | jq -rj '[.parameters // [] | .[] | if (.nullable|tostring) == "false" then "<\(.name)>" else "[\(.name)]" end] | join(" ")'
-    printf '\n'
-    printf '%s' "$1" | jq -r '.parameters // [] | .[] | "\(.name): \(if .type then "(\(.type)) " else "" end)\(if (.nullable|tostring) == "false" then "" else "(optional) " end)\(if .description then .description else "" end)\(if has("default") then " Defaults to \"\(.default|tostring)\"." else "" end)"' | while read -r line; do
-        printf '    %s\n' "${line}"
-    done
-    printf '%s' "$1" | jq -rj '[.requires // [] | .[]] | if length > 0 then "    Requires: \(.|join(", "))\n" else "" end'
-    printf '%s' "$1" | jq -rj '[.depends // [] | .[]] | if length > 0 then "    Depends: \(.|join(", "))\n" else "" end'
-    printf '\n'
-}
-
 ## Set value for given parameter into provided file ".env" or ".sh" file
 ##
-## {
-##   "namespace": "reflexion",
-##   "requires": [
-##     "sed"
-##   ],
-##   "depends": [
-##     "_echo_error",
-##     "_echo_info",
-##     "_echo_warning",
-##     "_has_parameter",
-##     "_sed_i"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "FILE_PATH",
-##       "type": "file",
-##       "description": "The path to the input file.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "KEY",
-##       "type": "str",
-##       "description": "The variable name to get from provided file.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 3,
-##       "name": "VALUE",
-##       "type": "str",
-##       "description": "The value to be set to provided file.",
-##       "nullable": false
-##     }
-##   ]
-## }
+## @namespace src/shell/reflexion
+## @requires realpath
+## @depends src/shell/colors/_echo_error src/shell/colors/_echo_info src/shell/colors/_echo_warning src/shell/compatibility/_sed_i src/shell/reflexion/_get_parameter src/shell/reflexion/_has_parameter
+## @param {file} <FILE_PATH> (required) The path to the input file.
+## @param {str} <KEY> (required) The variable name to get from provided file.
+## @param {str} <VALUE> (required) The value to be set to provided file.
 _set_parameter() {
-    # Synopsys : _set_parameter <FILE_PATH> <KEY> <VALUE>
-    #   FILE_PATH: The path to the input script.
-    #   KEY:       The variable name to set to provided file
-    #   VALUE:     The value to be set to provided file
-
     if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then _echo_error '_set_parameter: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 3 ]; then _echo_error "_set_parameter: too many arguments ($#)\n"; return 1; fi
     if [ ! -f "$1" ]; then _echo_error "_set_parameter: \"$1\" file not found\n"; return 1; fi
@@ -3147,42 +2226,14 @@ _set_parameter() {
     $(_sed_i) -E "s/^$2=.*/$2=$3/" "$1"
 }
 
-#--------------------------------------------------
-#_ Shoedoc
-#--------------------------------------------------
-
 ## Get function shedoc annotation by name
 ##
-## {
-##   "namespace": "shoedoc",
-##   "requires": [
-##     "awk"
-##   ],
-##   "depends": [
-##     "_echo_error"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "SCRIPT_PATH",
-##       "type": "file",
-##       "description": "The path to the input script.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "FUNCTION_NAME",
-##       "type": "str",
-##       "description": "The name of the function to retrieve.",
-##       "nullable": false
-##     }
-##   ]
-## }
+## @namespace src/shell/shoedoc
+## @requires awk realpath
+## @depends src/shell/colors/_echo_error
+## @param {file} <SCRIPT_PATH> (required) The path to the input script.
+## @param {str} <FUNCTION_NAME> (required) The name of the function to retrieve.
 _get_function_shoedoc() {
-    # Synopsis: _get_function_shoedoc <SCRIPT_PATH> <FUNCTION_NAME>
-    #   SCRIPT_PATH:   The path to the input file.
-    #   FUNCTION_NAME: The name of the function to retrieve.
-
     if [ -z "$1" ] || [ -z "$2" ]; then _echo_error '_get_function_shoedoc: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 2 ]; then _echo_error "_get_function_shoedoc: too many arguments ($#)\n"; return 1; fi
 
@@ -3203,28 +2254,11 @@ _get_function_shoedoc() {
 
 ## Get top-level shoedoc annotation of the provided shoe script file
 ##
-## {
-##   "namespace": "shoedoc",
-##   "requires": [
-##     "awk"
-##   ],
-##   "depends": [
-##     "_echo_error"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "SCRIPT_PATH",
-##       "type": "file",
-##       "description": "The path to the input script.",
-##       "nullable": false
-##     }
-##   ]
-## }
+## @namespace src/shell/shoedoc
+## @requires awk realpath
+## @depends src/shell/colors/_echo_error
+## @param {file} <SCRIPT_PATH> (required) The path to the input script.
 _get_script_shoedoc() {
-    # Synopsis: _get_script_shoedoc <SCRIPT_PATH>
-    #   SCRIPT_PATH: The path to the input script.
-
     if [ -z "$1" ]; then _echo_error '_get_script_shoedoc: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 1 ]; then _echo_error "_get_script_shoedoc: too many arguments ($#)\n"; return 1; fi
 
@@ -3244,74 +2278,19 @@ _get_script_shoedoc() {
     ' "$1"
 }
 
-## Get shoedoc annotation
-##
-## {
-##   "namespace": "shoedoc",
-##   "requires": [
-##     "awk"
-##   ],
-##   "depends": [
-##     "_echo_error"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "TEXT",
-##       "type": "str",
-##       "description": "The input shoedoc annotation bloc.",
-##       "nullable": false
-##     }
-##   ]
-## }
-_get_shoedoc() {
-    # Synopsis: _get_shoedoc <TEXT>
-    #   TEXT: The input shoedoc annotation bloc.
-    #   note: Remove every line that does not start with a pound character or contains a tag
-    #         Returns string without leading pound characters
-
-    if [ -z "$1" ]; then _echo_error '_get_shoedoc: some mandatory parameter is missing\n'; return 1; fi
-    if [ $# -gt 1 ]; then _echo_error "_get_shoedoc: too many arguments ($#)\n"; return 1; fi
-
-    printf '%s' "$1" | awk '/^## .*/ {
-        if (substr($2,1,1) != "@") {
-            RESULT=substr($0,length($1)+2); # remove leading pound character(s)
-            print RESULT
-        }
-    }'
-}
-
 ## Get shoedoc description
 ##
-## {
-##   "namespace": "shoedoc",
-##   "requires": [
-##     "awk"
-##   ],
-##   "depends": [
-##     "_echo_error"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "TEXT",
-##       "type": "str",
-##       "description": "The input shoedoc annotation bloc.",
-##       "nullable": false
-##     }
-##   ]
-## }
+## @namespace src/shell/shoedoc
+## @requires awk printf
+## @depends src/shell/colors/_echo_error
+## @param {str} <TEXT> (required) The input shoedoc annotation bloc.
 _get_shoedoc_description() {
-    # Synopsis: _get_shoedoc_description <TEXT>
-    #   TEXT: The input shoedoc annotation bloc.
-
     if [ -z "$1" ]; then _echo_error '_get_shoedoc_description: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 1 ]; then _echo_error "_get_shoedoc_description: too many arguments ($#)\n"; return 1; fi
 
     printf '%s' "$1" | awk '/^## .*/ {
         if (substr($2,1,1) != "@") {
             RESULT=substr($0,length($1)+2); # remove leading pound character(s)
-            if (index($0, "{") > 0) exit;
             count+=1;
             if (count==2 && RESULT=="") next;
             if (count>1) print RESULT
@@ -3321,36 +2300,12 @@ _get_shoedoc_description() {
 
 ## Return given tag values from shoedoc annotation
 ##
-## {
-##   "namespace": "shoedoc",
-##   "requires": [
-##     "awk"
-##   ],
-##   "depends": [
-##     "_echo_error"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "TEXT",
-##       "type": "str",
-##       "description": "The input shoedoc annotation bloc.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "TAG_NAME",
-##       "type": "str",
-##       "description": "The name of tag to return.",
-##       "nullable": false
-##     }
-##   ]
-## }
+## @namespace src/shell/shoedoc
+## @requires awk printf
+## @depends src/shell/colors/_echo_error
+## @param {str} <TEXT> (required) The input shoedoc annotation bloc.
+## @param {str} <TAG_NAME> (required) The name of tag to return.
 _get_shoedoc_tag() {
-    # Synopsis: _get_shoedoc_tag <TEXT> <TAG_NAME>
-    #   TEXT:     The input shoedoc annotation bloc.
-    #   TAG_NAME: The name of tag to return.
-
     if [ -z "$1" ] || [ -z "$2" ]; then _echo_error '_get_shoedoc_tag: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 2 ]; then _echo_error "_get_shoedoc_tag: too many arguments ($#)\n"; return 1; fi
 
@@ -3365,29 +2320,13 @@ _get_shoedoc_tag() {
 
 ## Get shoedoc title
 ##
-## {
-##   "namespace": "shoedoc",
-##   "requires": [
-##     "awk"
-##   ],
-##   "depends": [
-##     "_echo_error"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "TEXT",
-##       "type": "str",
-##       "description": "The input shoedoc annotation bloc.",
-##       "nullable": false
-##     }
-##   ]
-## }
+## Returns the first line that does not contain a tag
+##
+## @namespace src/shell/shoedoc
+## @requires awk printf
+## @depends src/shell/colors/_echo_error
+## @param {str} <TEXT> (required) The input shoedoc annotation bloc.
 _get_shoedoc_title() {
-    # Synopsis: _get_shoedoc_title <TEXT>
-    #   TEXT: The input shoedoc annotation bloc.
-    #   note: Returns the first line that does not contain a tag
-
     if [ -z "$1" ]; then _echo_error '_get_shoedoc_title: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 1 ]; then _echo_error "_get_shoedoc_title: too many arguments ($#)\n"; return 1; fi
 
@@ -3399,100 +2338,13 @@ _get_shoedoc_title() {
     }'
 }
 
-## Return function shoedoc as json
-##
-## {
-##   "namespace": "shoedoc",
-##   "requires": [
-##     "jq",
-##     "sed"
-##   ],
-##   "depends": [
-##     "_echo_error",
-##     "_get_function_shoedoc"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "SCRIPT_PATH",
-##       "type": "file",
-##       "description": "The path to the input script.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "FUNCTION_NAME",
-##       "type": "str",
-##       "description": "The name of the function to retrieve.",
-##       "nullable": false
-##     }
-##   ]
-## }
-_parse_shoedoc() {
-    # Synopsis: _parse_shoedoc <SCRIPT_PATH> <FUNCTION_NAME>
-    #   SCRIPT_PATH:   The path to the input file.
-    #   FUNCTION_NAME: The name of the function to retrieve.
-
-    if [ -z "$1" ] || [ -z "$2" ]; then _echo_error '_parse_shoedoc: some mandatory parameter is missing\n'; return 1; fi
-    if [ $# -gt 2 ]; then _echo_error "_parse_shoedoc: too many arguments ($#)\n"; return 1; fi
-
-    set -- "$(realpath "$1")" "$2"
-    if [ ! -f "$1" ]; then _echo_error "_parse_shoedoc: \"$1\" file not found\n"; return 1; fi
-
-    set -- "$1" "$2" "$(printf '%s' "$(_get_function_shoedoc "$1" "$2" | sed -nE 's/^ *#+ *//p')")"
-    set -- "$1" "$2" "$3" "$(printf '%s' "$3" | sed -n '/^{/,$p')" "$(printf '%s' "$3" | head -n 1)"
-
-    if [ "$(printf '%s' "$2" | cut -c1)" = "_" ]; then
-        set -- "$1" "$2" "$3" "$4" "$5" 'private'
-    else
-        set -- "$1" "$2" "$3" "$4" "$5" 'public'
-    fi
-    # $1: SCRIPT_PATH, $2: FUNCTION_NAME, $3: annotation, $4 json, $5: summary, $6: scope
-
-    if [ -z "$4" ]; then
-        jq --null-input \
-            --arg name "$2" \
-            --arg summary "$5" \
-            --arg scope "$6" \
-            '$ARGS.named'
-
-        return 0
-    fi
-
-    jq --null-input \
-    --arg name "$2" \
-    --arg summary "$5" \
-    --arg scope "$6" \
-    '$ARGS.named + '"$4"
-}
-
-#--------------------------------------------------
-#_ Strings
-#--------------------------------------------------
-
 ## Collapse blank lines with "sed"
 ##
-## {
-##   "namespace": "strings",
-##   "depends": [
-##     "_sed_i",
-##     "_echo_error",
-##     "_echo_info"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "FILE_PATH",
-##       "type": "file",
-##       "description": "The path to the input file.",
-##       "nullable": false
-##     }
-##   ]
-## }
+## @namespace src/shell/strings
+## @requires realpath
+## @depends src/shell/colors/_echo_error src/shell/colors/_echo_info src/shell/compatibility/_sed_i
+## @param {file} <FILE_PATH> (required) The path to the input file.
 _collapse_blank_lines() {
-    # Synopsis: _collapse_blank_lines <FILE_PATH>
-    #   FILE_PATH: The path to the input file.
-
     if [ -z "$1" ]; then _echo_error '_collapse_blank_lines: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 1 ]; then _echo_error "_collapse_blank_lines: too many arguments ($#)\n"; return 1; fi
     if [ ! -f "$1" ]; then _echo_error "_collapse_blank_lines: \"$1\" file not found\n"; return 1; fi
@@ -3504,33 +2356,13 @@ _collapse_blank_lines() {
     $(_sed_i) '/^$/{N;s/^\n$//;}' "$1"
 }
 
-#--------------------------------------------------
-#_ System
-#--------------------------------------------------
-
 ## Print error message if provided command is missing
 ##
-## {
-##   "namespace": "system",
-##   "depends": [
-##     "_get_package_name",
-##     "_is_installed",
-##     "_echo_error"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "COMMAND",
-##       "type": "str",
-##       "description": "A string containing the command name to find.",
-##       "nullable": false
-##     }
-##   ]
-## }
+## @namespace src/shell/system
+## @requires basename
+## @depends src/shell/colors/_echo_error src/shell/system/_get_package_name src/shell/system/_is_installed
+## @param {str} <COMMAND> (required) A string containing the command name to find.
 _check_installed() {
-    # Synopsis: _check_installed <COMMAND>
-    #   COMMAND: A string containing the command name to find.
-
     if [ -z "$1" ]; then _echo_error '_check_installed: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 2 ]; then _echo_error "_check_installed: too many arguments ($#)\n"; return 1; fi
 
@@ -3546,30 +2378,87 @@ _check_installed() {
     exit 1
 }
 
+## Find package name for given command
+##
+## @namespace src/shell/system
+## @requires echo snap
+## @depends src/shell/colors/_echo_error
+## @param {str} <COMMAND> (required) A string containing the command name to find.
+_get_package_name() {
+    if [ -z "$1" ]; then _echo_error '_get_package_name: some mandatory parameter is missing\n'; return 1; fi
+    if [ $# -gt 1 ]; then _echo_error "_get_package_name: too many arguments ($#)\n"; return 1; fi
+
+    # debian packages
+    if [ "$1" = aapt ];     then echo android-tools-adb;      return 0; fi
+    if [ "$1" = adb ];      then echo android-tools-adb;      return 0; fi
+    if [ "$1" = fastboot ]; then echo android-tools-fastboot; return 0; fi
+    if [ "$1" = snap ];     then echo snapd;                  return 0; fi
+
+    for __package__ in \
+        ab \
+        check_forensic \
+        checkgid \
+        fcgistarter \
+        htcacheclean \
+        htdbm \
+        htdigest \
+        htpasswd \
+        httxt2dbm \
+        logresolve \
+        rotatelogs \
+        split-logfile \
+    ; do
+        if [ "$1" = "${__package__}" ]; then
+            echo apache2-utils
+
+            return 0
+        fi
+    done
+
+    for __package__ in \
+        certutil \
+        modutil \
+        pk12util \
+        shlibsign \
+        signtool \
+        ssltap \
+    ; do
+        if [ "$1" = "${__package__}" ]; then
+            echo libnss3-tools
+
+            return 0
+        fi
+    done
+
+    for __package__ in \
+        arp \
+        ifconfig \
+        ipmaddr \
+        iptunnel \
+        mii-tool \
+        nameif \
+        plipconfig \
+        rarp \
+        route \
+        slattach \
+    ; do
+        if [ "$1" = "${__package__}" ]; then
+            echo net-tools
+
+            return 0
+        fi
+    done
+
+    echo "$1"
+}
+
 ## Check provided command is installed
 ##
-## {
-##   "namespace": "system",
-##   "requires": [
-##     "dpkg"
-##   ],
-##   "depends": [
-##     "_echo_error"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "COMMAND",
-##       "type": "str",
-##       "description": "A string containing the command name to find.",
-##       "nullable": false
-##     }
-##   ]
-## }
+## @namespace src/shell/system
+## @requires dpkg grep
+## @depends src/shell/colors/_echo_error
+## @param {str} <COMMAND> (required) A string containing the command name to find.
 _is_installed() {
-    # Synopsis: _is_installed <COMMAND>
-    #   COMMAND: A string containing the command name to find.
-
     if [ -z "$1" ]; then _echo_error '_is_installed: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 1 ]; then _echo_error "_is_installed: too many arguments ($#)\n"; return 1; fi
 
@@ -3595,14 +2484,11 @@ _is_installed() {
 
 ## Return current project directory realpath, or "pwd" when installed globally
 ##
-## {
-##   "namespace": "system",
-##   "returns": "str"
-## }
+## @namespace src/shell/system
+## @requires dirname pwd realpath
+## @assumes HOME
 _pwd() {
-    # Synopsis: _pwd
-
-    if [ "$(dirname "$(realpath "$0")")" = '/usr/local/bin' ]; then
+    if [ "$(dirname "$(realpath "$0")")" = '/usr/bin' ] || [ "$(dirname "$(realpath "$0")")" = '/usr/local/bin' ] || [ "$(dirname "$(realpath "$0")")" = "${HOME}/.local/bin" ]; then
         pwd
 
         return 0
@@ -3611,43 +2497,14 @@ _pwd() {
     dirname "$(realpath "$0")"
 }
 
-#--------------------------------------------------
-#_ Validation
-#--------------------------------------------------
-
 ## Checks if variable is valid given regex constraint
 ##
-## {
-##   "namespace": "validation",
-##   "requires": [
-##     "grep",
-##     "sed"
-##   ],
-##   "depends": [
-##     "_echo_error"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "VALUE",
-##       "type": "str",
-##       "description": "The string to be compared to regex pattern.",
-##       "nullable": false
-##     },
-##     {
-##       "position": 2,
-##       "name": "PATTERN",
-##       "type": "str",
-##       "description": "The regex parttern to apply.",
-##       "nullable": false
-##     }
-##   ]
-## }
+## @namespace src/shell/validation
+## @requires grep printf sed
+## @depends src/shell/colors/_echo_error
+## @param {str} <VALUE> (required) The string to be compared to regex pattern.
+## @param {str} <PATTERN> (required) The regex parttern to apply.
 _is_valid() {
-    # Synopsis: _is_valid <VALUE> <PATTERN>
-    #   VALUE:   The string to be compared to regex pattern.
-    #   PATTERN: The regex parttern to apply.
-
     if [ $# -lt 2 ]; then _echo_error '_is_valid: some mandatory parameter is missing\n'; return 1; fi
     if [ $# -gt 2 ]; then _echo_error "_is_valid: too many arguments ($#)\n"; return 1; fi
 
@@ -3671,34 +2528,16 @@ _is_valid() {
 
 ## Find constraints and validates a variable
 ##
-## {
-##   "namespace": "validation",
-##   "requires": [
-##     "sed"
-##   ],
-##   "depends": [
-##     "_get_constraint",
-##     "_is_valid",
-##     "_echo_error"
-##   ],
-##   "parameters": [
-##     {
-##       "position": 1,
-##       "name": "VARIABLE",
-##       "type": "str",
-##       "description": "The variable to validate in the followling format : variable_name=value.",
-##       "nullable": false
-##     }
-##   ]
-## }
+## @namespace src/shell/validation
+## @requires cut printf
+## @depends src/shell/colors/_echo_error src/shell/reflexion/_get_constraint src/shell/validation/_is_valid
+## @param {str} <VARIABLE> (required) The variable to validate in the followling format : variable_name=value.
+## @param {str} <CONSTRAINT> Optional constraint, read from the script when omitted.
 _validate() {
-    # Synopsis: _validate <VARIABLE>
-    #   VARIABLE: The variable to validate in the followling format : variable_name=value.
-
     if [ -z "$1" ]; then _echo_error '_validate: some mandatory parameter is missing\n'; return 1; fi
-    if [ $# -gt 1 ]; then _echo_error "_validate: too many arguments ($#)\n"; return 1; fi
+    if [ $# -gt 2 ]; then _echo_error "_validate: too many arguments ($#)\n"; return 1; fi
 
-    set -- "$(printf '%s' "$1" | cut -d= -f1)" "$(printf '%s' "$1" | cut -d= -f2)" "$(_get_constraint "$0" "$(printf '%s' "$1" | cut -d= -f1)")"
+    set -- "$(printf '%s' "$1" | cut -d= -f1)" "$(printf '%s' "$1" | cut -d= -f2-)" "${2:-$(_get_constraint "$0" "$(printf '%s' "$1" | cut -d= -f1)")}"
 
     if ! _is_valid "$2" "$3"; then
         _echo_error "invalid \"$1\", expected \"$3\", \"$2\" given\n"
@@ -3712,23 +2551,9 @@ _validate() {
 
 ## Shoe Kernel
 ##
-## {
-##   "namespace": "kernel",
-##   "requires": [
-##     "awk",
-##     "grep"
-##   ],
-##   "depends": [
-##     "_after",
-##     "_before",
-##     "_default",
-##     "_echo_error",
-##     "_get_flags",
-##     "_get_functions_names",
-##     "_get_options",
-##     "_validate"
-##   ]
-## }
+## @namespace src/shell/kernel
+## @requires awk false grep printf true
+## @depends src/shell/colors/_echo_error src/shell/help/_help src/shell/hooks/_after src/shell/hooks/_before src/shell/hooks/_default src/shell/reflexion/_get_flags src/shell/reflexion/_get_functions_names src/shell/reflexion/_get_options src/shell/validation/_validate
 _kernel() {
     # Check for duplicate function definitions
     __functions_names__=$(_get_functions_names "$0" true)
